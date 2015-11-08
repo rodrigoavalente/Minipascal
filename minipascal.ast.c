@@ -16,13 +16,13 @@ Symbol *lookup(char *symbol) {
 
     while (--symbolCount >= 0) {
         if (symbolPointer->name && !strcmp(symbolPointer->name, symbol)) {
-            yyerror("[ERROR] Redifining %s!", symbol);
+            yyerror("[ERROR] Redifining \"%s\"!", symbol);
             exit(0);
         }
 
         if (!symbolPointer->name) {
             symbolPointer->name = strdup(symbol);
-            symbolPointer->type = -1;
+            symbolPointer->type = 0;
             symbolPointer->typePointer = NULL;
             return symbolPointer;
         }
@@ -34,6 +34,10 @@ Symbol *lookup(char *symbol) {
 
     yyerror("[ERROR] Symbol table overflow!\n");
     abort();
+}
+
+Symbol *getSymbol(char *symbol_name) {
+    return &symbolTable[symbolHash(symbol_name)%NHASH];
 }
 
 AST *newAST(int nodetype, AST *lhs, AST *rhs) {
@@ -179,7 +183,7 @@ AST *newReference(Symbol *symbol) {
 }
 
 Symbol *newSymbol(const char *name, int type) {
-    Symbol *symbol = malloc(sizeof(Symbol));
+    Symbol *symbol = lookup(name);
 
     if (!symbol) {
         yyerror("[ERROR] Not enough space!");
@@ -188,6 +192,8 @@ Symbol *newSymbol(const char *name, int type) {
 
     symbol->name = name;
     symbol->type = type;
+
+    int aux = symbol->type;
 
     return symbol;
 };
@@ -235,33 +241,6 @@ AST *newFlow(int nodetype, AST *condition, AST *then_part, AST *else_part) {
     flow->else_part = else_part;
 
     return (AST*)flow;
-}
-
-void doDeclaration(const char *name, int type) {
-    Symbol *symbol = lookup(name);
-
-    if (!symbol) {
-        symbol->type = type;
-
-        switch (type) {
-            case 1:
-            case 2:
-                ((Number*)symbol->typePointer);
-                break;
-            case 3:
-                ((Character*)symbol->typePointer);
-                break;
-            case 4:
-                ((Word*)symbol->typePointer);
-                break;
-            case 5:
-                ((Boolean*)symbol->typePointer);
-                break;
-            default:
-                yyerror("[ERROR] Unknown given type.");
-                break;
-        }
-    }
 }
 
 void symlistFree(SymList *symlist) {
@@ -343,21 +322,6 @@ void auxEval(AST *ast, FILE *file) {
         fwrite(temp, 1, size, dot);
         auxEval(ast->rhs, dot);
     }
-}
-
-void printNull(AST *ast, FILE *file) {
-    FILE *dot = file;
-    static int nullcount;
-
-    nullcount++;
-    int size;
-    char buffer[50];
-
-    size = snprintf(buffer, 50, "\tnull%i [style = none];\n\t\"%c\" -> null%i;\n", nullcount, ast->nodetype, nullcount);
-
-    char temp[size];
-    strcpy(temp, buffer);
-    fwrite(temp, 1, size, dot);
 }
 
 int main(int argc, char** argv) {

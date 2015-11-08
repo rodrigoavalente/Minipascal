@@ -38,8 +38,10 @@
 %token VAR PROCEDURE ARRAY OF RETURN
 %token DIV OR NOT AND NUMBER ASSIGNMENT
 %token IF WHILE DO
+%token <const_char> CONST_CHAR
+%token <const_string> CONST_STRING
 %token <const_number> CONST_NUMBER
-%token CONST_CHAR CONST_STRING CONST_BOOLEAN
+%token <const_boolean>  CONST_BOOLEAN
 
 %token <type> TYPE
 %token <arithmetic> SUM_OPERATOR MULT_OPERATOR
@@ -50,7 +52,7 @@
 %right THEN ELSE
 
 %type <symlist> identifier_list
-%type <ast> expression factor term assignment statement statement_list statement_part program_block variable_declaration strutured_statement
+%type <ast> expression factor term assignment statement statement_list statement_part program_block strutured_statement
 
 
 
@@ -62,25 +64,12 @@
 
     program_block:
             variable_declaration                                        
-            statement_part                                              {
-                                                                            if (!$1) {
-                                                                                $$ = newAST('R', NULL, $2);
-                                                                            } else {
-                                                                                $$ = newAST('R', $1, $2);
-                                                                            }
-                                                                        }                                           
+            statement_part                                              {$$ = $2;}                                           
         ;
 
     variable_declaration:
-            %empty                                                      {$$ = NULL;}
-        |   VAR identifier_list ':' TYPE  ';' variable_declaration      {
-                                                                            doDeclaration($2, $4);
-                                                                            if (!$6) {
-                                                                                $$ = newAST('D', $2, NULL);
-                                                                            } else {
-                                                                                $$ = newAST('D', $2, $6);
-                                                                            }
-                                                                        }        
+            %empty                                                      
+        |   VAR identifier_list ':' TYPE  ';' variable_declaration      {newSymbol($2, $4);}        
         ;
 
     identifier_list:
@@ -117,7 +106,22 @@
         ;
 
     assignment:
-            IDENTIFIER ASSIGNMENT expression                            {$$ = newAssignment($1, $3);}
+            IDENTIFIER ASSIGNMENT expression                            {
+                                                                            Symbol *symbol = getSymbol($1);
+
+                                                                            if ($1 == NULL) {
+                                                                                int size;
+                                                                                char buffer[50];
+
+                                                                                size = snprintf(buffer, 30, "Undeclared identifier \"%s\"", $1);
+                                                                                char temp[size];
+                                                                                strcpy(temp, buffer);
+
+                                                                                lyyerror(@1, temp);
+                                                                            } else {
+                                                                                $$ = newAssignment(symbol, $3);    
+                                                                            }                                                                            
+                                                                        }
         ;
 
     expression:
@@ -133,7 +137,10 @@
 
     term:
             IDENTIFIER                                                  {$$ = newReference($1);}
+        |   CONST_CHAR                                                  {$$ = newCharacter($1);}
+        |   CONST_STRING                                                {$$ = newWord($1);}
         |   CONST_NUMBER                                                {$$ = newNumber($1);}
+        |   CONST_BOOLEAN                                               {$$ = newBoolean($1);}
         |   '(' expression ')'                                          {$$ = $2;}
         ;
 %%
@@ -142,7 +149,7 @@ void yyerror(const char *message, ...) {
     int size;
     char buffer[100];
 
-    size = snprintf(buffer, 100, "%s at %s in line: \"%s\"", message, yytext, linebuffer);
+    size = snprintf(buffer, 100, "%s at \"%s\" in line: \"%s\"", message, yytext, linebuffer);
 
     char aux[size];
     strcpy(aux, buffer);
@@ -162,7 +169,7 @@ void lyyerror(YYLTYPE type, char *message, ...) {
     int size;
     char buffer[100];
 
-    size = snprintf(buffer, 100, "%s at %s in line: \"%s\"", message, yytext, linebuffer);
+    size = snprintf(buffer, 100, "%s at \"%s\" in line: \"%s\"", message, yytext, linebuffer);
 
     char aux[size];
     strcpy(aux, buffer);
@@ -173,7 +180,7 @@ void lyyerror(YYLTYPE type, char *message, ...) {
 
     if (type.first_line) {
         fprintf(stderr, "[ERROR] From: %d.%d To: %d.%d: ", type.first_line, type.first_column, type.last_line, type.last_column);
-        vfprintf(stderr, message, arguments);
+        vfprintf(stderr, aux, arguments);
         fprintf(stderr, "\n");
     }
 }

@@ -56,8 +56,6 @@ void symlistFree(SymList *symlist);
         K: constante numérica
         C: caracter
         S: cadeia de caracteres
-        D: declaração de varíaveis
-        R: root
         '=': Atribuição
  */
 
@@ -117,11 +115,9 @@ AST *newWord(char *value);
 AST *newComparison(int comparison_type, AST *lhs, AST *rhs);
 AST *newFlow(int nodetype, AST *condition, AST *then_part, AST *else_part);
 
-// Declara variavéis
-void doDeclaration(const char *name, int type);
 
 // Avalia uma AST
-void eval(AST *ast);
+AST *evalExpression(AST *ast);
 
 // Libera uma árvore
 void treefree(AST *ast);
