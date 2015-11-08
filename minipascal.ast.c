@@ -206,6 +206,37 @@ SymList *newSymList(Symbol *symbol, SymList *next) {
     return symlist;
 }
 
+AST *newComparison(int comparison_type, AST *lhs, AST *rhs) {
+    AST *ast = malloc(sizeof(ast));
+
+    if (!ast) {
+        yyerror("[ERROR] Not enough space!");
+        exit(0);
+    }
+
+    ast->nodetype = '0' + comparison_type;
+    ast->lhs = lhs;
+    ast->rhs = rhs;
+
+    return ast;
+}
+
+AST *newFlow(int nodetype, AST *condition, AST *then_part, AST *else_part) {
+    Flow *flow = malloc(sizeof(Flow));
+
+    if (!flow) {
+        yyerror("[ERROR] Not enough space!");
+        exit(0);
+    }
+
+    flow->nodetype = nodetype;
+    flow->condition = condition;
+    flow->then_part = then_part;
+    flow->else_part = else_part;
+
+    return (AST*)flow;
+}
+
 void doDeclaration(const char *name, int type) {
     Symbol *symbol = lookup(name);
 
@@ -243,48 +274,104 @@ void symlistFree(SymList *symlist) {
     }
 }
 
-void eval(AST *ast) {
-    // static FILE *graph;
+void graphEval(AST *ast) {
+//    FILE *dot = fopen("ast.gv", "w");
+//
+//    if(dot) {
+//        int size;
+//        char start[69] = "digraph AST {\n\tnode [fontname = \"Arial\"];\n\tgraph [ordering = \"out\"];\n";
+//
+//        fwrite(start, 1, 69, dot);
+//        if (!ast) {
+//            fwrite("\n", sizeof(char), 1, dot);
+//        } else if (!ast->lhs && !ast->rhs) {
+//            int size = printf("%c;\n", ast->nodetype);
+//            char aux[size];
+//            snprintf(aux, sizeof(aux), "%c;\n", ast->nodetype);
+//            fwrite(aux, sizeof(char), sizeof(aux), dot);
+//        } else {
+//            auxEval(ast, dot);
+//        }
+//
+//        char end[2] = "}""\n";
+//        fwrite(end, 1, 2, dot);
+//        fclose(dot);
+//        dot = NULL;
+//
+//        system("dot ast.gv | gvpr -c -ftree.gv | neato -n -Tsvg -o ast.svg");
+//    } else {
+//        fprintf(stderr, "[ERROR] Failed to create file!");
+//    }
 
-    
-    // graph = fopen("minipascal.ast.dot", "w");
-    // fputs("// Minipascal AST\n", graph);
-    // fputs("rankdir=LR\n", graph);
-    // fputs("digraph AST {", graph);
-
-    // fputs("\t", graph);
-    // fputs(ast->nodetype, graph);
-    
     if (ast) {
-        printf("Existe ast. Nó: %c\n", ast->nodetype);
-        eval(ast->lhs);
-        eval(ast->rhs);
-    } else {
-        printf("Não existe ast.\n");
+        printf("Nó: %c.\n", ast->nodetype);
+        if (ast->lhs) {
+            graphEval(ast->lhs);
+        }
+        if (ast->rhs) {
+            graphEval(ast->rhs);
+        }
+    }
+
+}
+
+void auxEval(AST *ast, FILE *file) {
+    FILE *dot = file;
+
+    if (ast->lhs) {
+        int size;
+        char buffer[50];
+
+        size = snprintf(buffer, 50, "\t\"%c\" -> \"%c\";\n", ast->nodetype, ast->lhs->nodetype);
+
+        char temp[size];
+        strcpy(temp, buffer);
+
+        fwrite(temp, 1, size, dot);
+        auxEval(ast->lhs, dot);
+    }
+
+    if (ast->rhs) {
+        int size;
+        char buffer[50];
+
+        size = snprintf(buffer, 50, "\t\"%c\" -> \"%c\";\n", ast->nodetype, ast->rhs->nodetype);
+
+        char temp[size];
+        strcpy(temp, buffer);
+
+        fwrite(temp, 1, size, dot);
+        auxEval(ast->rhs, dot);
     }
 }
 
-void yyerror(const char *message, ...) {
-    va_list arguments;
-    va_start(arguments, message);
+void printNull(AST *ast, FILE *file) {
+    FILE *dot = file;
+    static int nullcount;
 
-    fprintf(stderr, "Line: %d. ", yylineno);
-    vfprintf(stderr, message, arguments);
-    fprintf(stderr, "\n");
+    nullcount++;
+    int size;
+    char buffer[50];
+
+    size = snprintf(buffer, 50, "\tnull%i [style = none];\n\t\"%c\" -> null%i;\n", nullcount, ast->nodetype, nullcount);
+
+    char temp[size];
+    strcpy(temp, buffer);
+    fwrite(temp, 1, size, dot);
 }
 
 int main(int argc, char** argv) {
-    if (argc < 2) {
+    if (argc < 1) {
         printf("Usage: minipascal <file path>\n");
     } else {
-        yyin = fopen(argv[argc - 1], "r");
+        yyin = fopen("test.pas", "r");
 
         if (yyin) {
             do {
                 yyparse();
-            } while (!feof(yyin));    
+            } while (!feof(yyin));
         } else {
             printf("[ERROR] Failed to open file!\n");
-        }        
+        }
     }
 }

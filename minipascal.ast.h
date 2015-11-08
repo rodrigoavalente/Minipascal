@@ -13,10 +13,14 @@ int warning_count;
 
 extern FILE *yyin;
 extern int yylineno;
+extern char *yytext;
+extern char linebuffer[500];
 
 extern int yylex();
 extern int yyparse();
 void yyerror(const char *message, ...);
+
+struct YYLTYPE;
 
 // Definição dos tipos
 
@@ -84,6 +88,13 @@ typedef struct word {
     char *value;
 } Word;
 
+typedef struct flow {
+    int nodetype;
+    AST *condition;
+    AST *then_part;
+    AST *else_part;
+} Flow;
+
 typedef struct symref {
     int nodetype;
     Symbol *symbol
@@ -103,6 +114,8 @@ AST *newNumber(double value);
 AST *newBoolean(int value);
 AST *newCharacter(char value);
 AST *newWord(char *value);
+AST *newComparison(int comparison_type, AST *lhs, AST *rhs);
+AST *newFlow(int nodetype, AST *condition, AST *then_part, AST *else_part);
 
 // Declara variavéis
 void doDeclaration(const char *name, int type);

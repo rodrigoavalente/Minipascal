@@ -34,7 +34,7 @@
 # define YY_YY_MINIPASCAL_PARSER_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 0
+# define YYDEBUG 1
 #endif
 #if YYDEBUG
 extern int yydebug;
@@ -60,19 +60,19 @@ extern int yydebug;
     NUMBER = 270,
     ASSIGNMENT = 271,
     IF = 272,
-    THEN = 273,
-    ELSE = 274,
-    WHILE = 275,
-    DO = 276,
-    CONST_NUMBER = 277,
-    CONST_CHAR = 278,
-    CONST_STRING = 279,
-    CONST_BOOLEAN = 280,
-    TYPE = 281,
-    SUM_OPERATOR = 282,
-    MULT_OPERATOR = 283,
-    RELATIONAL_OPERATOR = 284,
-    IDENTIFIER = 285
+    WHILE = 273,
+    DO = 274,
+    CONST_NUMBER = 275,
+    CONST_CHAR = 276,
+    CONST_STRING = 277,
+    CONST_BOOLEAN = 278,
+    TYPE = 279,
+    SUM_OPERATOR = 280,
+    MULT_OPERATOR = 281,
+    RELATIONAL_OPERATOR = 282,
+    IDENTIFIER = 283,
+    THEN = 284,
+    ELSE = 285
   };
 #endif
 
@@ -81,7 +81,7 @@ extern int yydebug;
 typedef union YYSTYPE YYSTYPE;
 union YYSTYPE
 {
-#line 10 "minipascal.parser.y" /* yacc.c:1909  */
+#line 14 "minipascal.parser.y" /* yacc.c:1909  */
 
     // Definição dos tipos dos operandos
     int relational;
@@ -92,7 +92,8 @@ union YYSTYPE
 
     // Definição dos tipos literais
     int const_boolean;
-    char *string_const;
+    char const_char;
+    char *const_string;
     double const_number;
 
     // Definição de tipos
@@ -103,15 +104,29 @@ union YYSTYPE
     struct symbol *symbol;
     struct symlist *symlist;
 
-#line 107 "minipascal.parser.tab.h" /* yacc.c:1909  */
+#line 108 "minipascal.parser.tab.h" /* yacc.c:1909  */
 };
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
 
+/* Location type.  */
+#if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
+typedef struct YYLTYPE YYLTYPE;
+struct YYLTYPE
+{
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
+};
+# define YYLTYPE_IS_DECLARED 1
+# define YYLTYPE_IS_TRIVIAL 1
+#endif
+
 
 extern YYSTYPE yylval;
-
+extern YYLTYPE yylloc;
 int yyparse (void);
 
 #endif /* !YY_YY_MINIPASCAL_PARSER_TAB_H_INCLUDED  */

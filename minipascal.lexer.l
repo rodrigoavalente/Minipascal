@@ -3,42 +3,52 @@
 %{
     #include <ctype.h>
     #include <string.h>
+    #include <assert.h>
 
     #include "minipascal.parser.tab.h"
 
-    char *lowerString(const char* string_to_lower);   
+    int yycolumn = 1;
+    char linebuffer[500];
+
+    void warning(const char* mensage);
+    char *trimWhiteSpace(const char *string);
+    char *lowerString(const char* string_to_lower);
+
+    #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
+                           yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + yyleng - 1; \
+                           yycolumn += yyleng;
 %}
 
 NUMBER [0-9]
 EXP ([Ee][\-\+]?[0-9]+)
 
 %%
-"+"                                                    {yylval.arithmetic = 1; return SUM_OPERATOR;}
-"-"                                                    {yylval.arithmetic = 2; return SUM_OPERATOR;}
-"or"|"OR"                                              {yylval.arithmetic = 3; return SUM_OPERATOR;}
+"+"                                                    {yylval.arithmetic = '+'; return SUM_OPERATOR;}
+"-"                                                    {yylval.arithmetic = '-'; return SUM_OPERATOR;}
+"or"|"OR"                                              {yylval.arithmetic = 'o'; return SUM_OPERATOR;}
 
-"*"                                                    {yylval.arithmetic = 4; return MULT_OPERATOR;}
-"/"                                                    {yylval.arithmetic = 5; return MULT_OPERATOR;}
-"div"|"DIV"                                            {yylval.arithmetic = 6; return MULT_OPERATOR;}
-"and"|"AND"                                            {yylval.arithmetic = 7; return MULT_OPERATOR;}
+"*"                                                    {yylval.arithmetic = '*'; return MULT_OPERATOR;}
+"/"                                                    {yylval.arithmetic = '/'; return MULT_OPERATOR;}
+"div"|"DIV"                                            {yylval.arithmetic = '%'; return MULT_OPERATOR;}
+"and"|"AND"                                            {yylval.arithmetic = '.'; return MULT_OPERATOR;}
 
 "("|")"|","|";"|"."|":"|"{"|"}"                        {return yytext[0];}
 
 
 
-">"                                                    {    yylval.relational = 8;
+">"                                                    {    yylval.relational = 1;
                                                             return RELATIONAL_OPERATOR;
                                                        }
-"<"                                                    {    yylval.relational = 9;
+"<"                                                    {    yylval.relational = 2;
                                                             return RELATIONAL_OPERATOR;
                                                        }
-"<>"                                                   {    yylval.relational = 10;
+"<>"                                                   {    yylval.relational = 3;
                                                             return RELATIONAL_OPERATOR;
                                                        }
-"<="                                                   {    yylval.relational = 11;
+"<="                                                   {    yylval.relational = 4;
                                                             return RELATIONAL_OPERATOR;
                                                        }                            
-">="                                                   {    yylval.relational = 12;
+">="                                                   {    yylval.relational = 5;
                                                             return RELATIONAL_OPERATOR;
                                                        }
 
@@ -70,19 +80,57 @@ EXP ([Ee][\-\+]?[0-9]+)
                                                             yylval.identifier = lowerString(yytext); 
                                                             return IDENTIFIER;
                                                        }
-{NUMBER}+{EXP}?                                        {return CONST_NUMBER;}
-"'"(\n)"'"|"'"(.)"'"                                   {return CONST_CHAR;}
-"\""(\n)"\""|"\""(.)"\""                               {return CONST_STRING;}
+{NUMBER}+{EXP}?                                        {
+                                                          yylval.const_number = atof(yytext);
+                                                          return CONST_NUMBER;
+                                                       }
+\'[^\"\n]\'                                            {
+                                                          yylval.const_char = yytext;
+                                                          return CONST_CHAR;
+                                                       }
+\'[^\"\n]$                                             {
+                                                          warning("[WARNING] Untermined char.");
+                                                          yylval.const_char = yytext;
+                                                          return CONST_CHAR;
+                                                       }                                                       
+\"[^\"\n]*\"                                           {
+                                                          yylval.const_string = yytext;
+                                                          return CONST_STRING;
+                                                       }
+\"[^\"\n]*$                                            {
+                                                          warning("[WARNING] Untermined string.");
+                                                          yylval.const_string = yytext;
+                                                          return CONST_STRING;
+                                                       }
 
 \{((.*?)|(\.*?))?\}                                    {/* Ignora comentários*/}
 
-[ \t\n]                                                {/* Ignora espaçoes em branco*/}
+[ \t]                                                  {/* Ignora espaçoes em branco*/}
+\n                                                     {yycolumn = 1;}
+\n.*                                                   {
+                                                          strcpy(linebuffer, trimWhiteSpace(yytext + 1));
+                                                          yyless(1);
+                                                       }
 .                                                      {}
 
 
 %%
 
-char *lowerString(const char* string_to_lower) {
+void warning(const char *message) {
+  printf("%s\n", message);
+}
+
+char *trimWhiteSpace(const char *string) {
+  char *aux = strdup(string);
+
+  while(isspace(*aux)) {
+    aux++;
+  }
+
+  return aux;
+}
+
+char *lowerString(const char *string_to_lower) {
     char *temp = strdup(string_to_lower);
     unsigned char *tptr = (unsigned char*)temp;
 
