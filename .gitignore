@@ -40,3 +40,4 @@ graph/parser/minipascal.parser.dot
 src/minipascal.lexer.c
 minipascal.cbp
 minipascal.layout
+graph/ast/ast.gv
