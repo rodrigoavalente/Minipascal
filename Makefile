@@ -1,25 +1,26 @@
 SRC_DIR			:= src
-
+INCLUDE_DIR     := include/
 SRC 			:= $(foreach sdir, $(SRC_DIR), $(wildcard $(sdir)/*.c))
-LEXER			:= minipascal.lexer.c
-PARSER 			:= minipascal.parser.tab.h minipascal.parser.tab.c
-AST				:= minipascal.ast.c
-INCLUDES		:= -Isrc/
-INCLUDES		+= $(addprefix -I, $(SRC_DIR))
+INCLUDE			:= $(addprefix -I, $(INCLUDE_DIR))
+LEXER			:= src/minipascal.lexer.c
+PARSER 			:= include/minipascal.parser.tab.h src/minipascal.parser.tab.c
 
 all: minipascal
 
-$(PARSER): minipascal.parser.y
-	bison -d -g -r all -t minipascal.parser.y
+$(PARSER): parser/minipascal.parser.y
+	bison -d --graph=graph/parser/minipascal.parser.dot \
+		   -r all --report-file=parser/minipascal.parser.output parser/minipascal.parser.y
+	@mv minipascal.parser.tab.h include/
+	@mv minipascal.parser.tab.c src/
 
-$(LEXER): minipascal.lexer.l $(PARSER)
-	flex -o minipascal.lexer.c minipascal.lexer.l
+$(LEXER): lexer/minipascal.lexer.l $(PARSER)
+	@flex -o src/minipascal.lexer.c lexer/minipascal.lexer.l
 
-graph: minipascal.parser.dot
-	dot -Tsvg minipascal.parser.dot -o graph.svg
+minipascal_graph: graph/parser/minipascal.parser.dot
+	@dot -Tsvg grap/parser/minipascal.parser.dot -o graph/parser/minipascal.parser.svg
 
-minipascal: $(PARSER) $(LEXER)
-	gcc -w $(LEXER) $(AST) minipascal.parser.tab.c -lfl -o minipascal >& buildlog.txt
+minipascal: $(LEXER)
+	gcc $(INCLUDE) -w $(SRC) -lfl -o bin/minipascal >& bin/buildlog.txt
 
 clean:
-	rm $(LEXER) $(PARSER) buildlog.txt minipascal minipascal.parser.output minipascal.ast.dot graph.svg
+	@rm $(LEXER) $(PARSER) bin/buildlog.txt bin/minipascal parser/minipascal.parser.output graph/parser/minipascal.ast.dot graph/parser/minipascal.parser.svg

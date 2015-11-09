@@ -31,8 +31,6 @@ typedef struct symbol {
     void *typePointer;
 } Symbol;
 
-Symbol *newSymbol(const char *name, int type);
-
 // Tabela simples de símbolos de tamanho fixo.
 #define NHASH 9997
 Symbol symbolTable[NHASH];
@@ -45,8 +43,9 @@ typedef struct symlist {
     struct symlist *next;
 } SymList;
 
-SymList *newSymList(Symbol *symbol, SymList *next);
 void symlistFree(SymList *symlist);
+void newSymbol(SymList *symlist, int type);
+SymList *newSymList(const char *name, SymList *next);
 
 /*
     Tipos de nós:
@@ -57,6 +56,8 @@ void symlistFree(SymList *symlist);
         C: caracter
         S: cadeia de caracteres
         '=': Atribuição
+        I: if
+        W: while
  */
 
 typedef struct ast {

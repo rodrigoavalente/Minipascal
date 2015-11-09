@@ -6,7 +6,7 @@
     #include <stdio.h>
     #include <stdlib.h>
 
-    #include "minipascal.ast.h"
+    #include "../include/minipascal.ast.h"
 
     extern char linebuffer[500];
 %}
@@ -63,18 +63,18 @@
         ;
 
     program_block:
-            variable_declaration                                        
-            statement_part                                              {$$ = $2;}                                           
+            variable_declaration
+            statement_part                                              {$$ = $2;}
         ;
 
     variable_declaration:
-            %empty                                                      
-        |   VAR identifier_list ':' TYPE  ';' variable_declaration      {newSymbol($2, $4);}        
+            %empty
+        |   VAR identifier_list ':' TYPE  ';' variable_declaration      {newSymbol($2, $4);}
         ;
 
     identifier_list:
-            IDENTIFIER                                                  {$$ = $1;}
-        |   IDENTIFIER ',' identifier_list                              {$$ = newSymList($1,$3);}
+            IDENTIFIER                                                  {$$ = newSymList($1, NULL);}
+        |   IDENTIFIER ',' identifier_list                              {$$ = newSymList($1, $3);}
         ;
 
     statement_part:
@@ -107,11 +107,11 @@
 
     assignment:
             IDENTIFIER ASSIGNMENT expression                            {
-                                                                            Symbol *symbol = getSymbol($1);
+                                                                            Symbol *symbol = getSymbol($1->name);
 
-                                                                            if ($1 == NULL) {
+                                                                            if (symbol == NULL) {
                                                                                 int size;
-                                                                                char buffer[50];
+                                                                                char buffer[30];
 
                                                                                 size = snprintf(buffer, 30, "Undeclared identifier \"%s\"", $1);
                                                                                 char temp[size];
@@ -119,8 +119,8 @@
 
                                                                                 lyyerror(@1, temp);
                                                                             } else {
-                                                                                $$ = newAssignment(symbol, $3);    
-                                                                            }                                                                            
+                                                                                $$ = newAssignment(symbol, $3);
+                                                                            }
                                                                         }
         ;
 
@@ -136,7 +136,23 @@
         ;
 
     term:
-            IDENTIFIER                                                  {$$ = newReference($1);}
+            IDENTIFIER                                                  {
+                                                                            Symbol *symbol = getSymbol($1);
+
+                                                                            if ($1 == NULL) {
+                                                                                int size;
+                                                                                char buffer[30];
+
+                                                                                size = snprintf(buffer, 30, "Undeclared identifier \"%s\"", $1);
+                                                                                char temp[size];
+                                                                                strcpy(temp, buffer);
+
+                                                                                lyyerror(@1, temp);
+                                                                            } else {
+                                                                                $$ = newReference($1);
+                                                                            }
+
+                                                                        }
         |   CONST_CHAR                                                  {$$ = newCharacter($1);}
         |   CONST_STRING                                                {$$ = newWord($1);}
         |   CONST_NUMBER                                                {$$ = newNumber($1);}

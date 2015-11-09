@@ -30,3 +30,13 @@
 
 # Debug files
 *.dSYM/
+
+# Project especified
+bin/
+include/minipascal.parser.tab.h
+src/minipascal.parser.tab.c
+parser/minipascal.parser.output
+graph/parser/minipascal.parser.dot
+src/minipascal.lexer.c
+minipascal.cbp
+minipascal.layout

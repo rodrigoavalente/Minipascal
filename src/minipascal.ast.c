@@ -37,7 +37,16 @@ Symbol *lookup(char *symbol) {
 }
 
 Symbol *getSymbol(char *symbol_name) {
-    return &symbolTable[symbolHash(symbol_name)%NHASH];
+    Symbol *symbol = &symbolTable[symbolHash(symbol_name)%NHASH];
+
+    int temp1 = symbol->type;
+    char *temp2 = symbol->name;
+
+    if (!symbol->name) {
+        return NULL;
+    }
+
+    return symbol;
 }
 
 AST *newAST(int nodetype, AST *lhs, AST *rhs) {
@@ -182,24 +191,20 @@ AST *newReference(Symbol *symbol) {
     return (AST*)symbol;
 }
 
-Symbol *newSymbol(const char *name, int type) {
-    Symbol *symbol = lookup(name);
+void newSymbol(SymList *symlist, int type) {
+    symlist->symbol->type = type;
 
-    if (!symbol) {
-        yyerror("[ERROR] Not enough space!");
-        exit(0);
+    if (symlist->next) {
+        newSymbol(symlist->next, type);
     }
 
-    symbol->name = name;
-    symbol->type = type;
-
-    int aux = symbol->type;
-
-    return symbol;
+    int aux = symlist->symbol->type;
 };
 
-SymList *newSymList(Symbol *symbol, SymList *next) {
+SymList *newSymList(const char *name, SymList *next) {
+    Symbol *symbol = lookup(name);
     SymList *symlist = malloc(sizeof(SymList));
+
 
     if (!symlist) {
         yyerror("[ERROR] Not enough space!");
@@ -328,7 +333,7 @@ int main(int argc, char** argv) {
     if (argc < 1) {
         printf("Usage: minipascal <file path>\n");
     } else {
-        yyin = fopen("test.pas", "r");
+        yyin = fopen("test files/test.pas", "r");
 
         if (yyin) {
             do {
