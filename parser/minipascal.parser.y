@@ -6,7 +6,7 @@
     #include <stdio.h>
     #include <stdlib.h>
 
-    #include "../include/minipascal.ast.h"
+    #include "minipascal.ast.h"
 
     extern char linebuffer[500];
 %}
@@ -83,7 +83,7 @@
 
     statement_list:
             %empty                                                      {$$ = NULL;}
-            |   statement ';' statement_list                            {
+		|   statement ';' statement_list                                {
                                                                             if ($3 == NULL) {
                                                                                 $$ = newAST('L',$1, NULL);
                                                                             } else {
@@ -107,7 +107,7 @@
 
     assignment:
             IDENTIFIER ASSIGNMENT expression                            {
-                                                                            Symbol *symbol = getSymbol($1->name);
+                                                                            Symbol *symbol = getSymbol($1);
 
                                                                             if (symbol == NULL) {
                                                                                 int size;
@@ -119,7 +119,7 @@
 
                                                                                 lyyerror(@1, temp);
                                                                             } else {
-                                                                                $$ = newAssignment(symbol, $3);
+                                                                                $$ = newAssignment($1, $3);
                                                                             }
                                                                         }
         ;

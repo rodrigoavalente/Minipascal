@@ -39,14 +39,11 @@ Symbol *lookup(char *symbol) {
 Symbol *getSymbol(char *symbol_name) {
     Symbol *symbol = &symbolTable[symbolHash(symbol_name)%NHASH];
 
-    int temp1 = symbol->type;
-    char *temp2 = symbol->name;
-
-    if (!symbol->name) {
-        return NULL;
+    if (symbol->name && !strcmp(symbol->name, symbol_name)) {
+		return symbol;
+    } else {
+		return NULL;
     }
-
-    return symbol;
 }
 
 AST *newAST(int nodetype, AST *lhs, AST *rhs) {
@@ -120,20 +117,6 @@ AST *newWord(char *value) {
     return (AST*)word;
 }
 
-AST *newRef(Symbol *symbol) {
-    SymRef *symref = malloc(sizeof(SymRef));
-
-    if (!symref) {
-        yyerror("[ERROR] Not enough space!");
-        exit(0);
-    }
-
-    symref->nodetype = 'N';
-    symref->symbol = symbol;
-
-    return (AST*)symref;
-}
-
 AST *newAssignment(Symbol *symbol, AST *value) {
     SymAssignment *symassign = malloc(sizeof(SymAssignment));
 
@@ -188,7 +171,7 @@ AST *newReference(Symbol *symbol) {
     symref->nodetype = 'N';
     symref->symbol = symbol;
 
-    return (AST*)symbol;
+    return (AST*)symref;
 }
 
 void newSymbol(SymList *symlist, int type) {
@@ -329,7 +312,7 @@ void auxEval(AST *ast, FILE *file) {
     }
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     if (argc < 1) {
         printf("Usage: minipascal <file path>\n");
     } else {

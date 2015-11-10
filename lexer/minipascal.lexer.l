@@ -5,7 +5,7 @@
     #include <string.h>
     #include <assert.h>
 
-    #include "../include/minipascal.parser.tab.h"
+    #include "minipascal.parser.tab.h"
 
     int yycolumn = 1;
     char linebuffer[500];
@@ -76,7 +76,7 @@ EXP ([Ee][\-\+]?[0-9]+)
 
 "true"|"TRUE"                                          {return CONST_BOOLEAN;}
 "false"|"FALSE"                                        {return CONST_BOOLEAN;}
-[a-zA-Z]*?_?([a-zA-Z|0-9])*                            {
+[a-zA-Z]+_?([a-zA-Z|0-9])*                            {
                                                             yylval.identifier = lowerString(yytext);
                                                             return IDENTIFIER;
                                                        }
