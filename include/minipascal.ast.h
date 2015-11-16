@@ -28,7 +28,7 @@ struct YYLTYPE;
 typedef struct symbol {
     char *name;
     int type;
-    void *typePointer;
+    struct ast *value;
 } Symbol;
 
 // Tabela simples de símbolos de tamanho fixo.
@@ -52,7 +52,8 @@ SymList *newSymList(const char *name, SymList *next);
         N: referência a símbolo
         L: expressão
         B: constante booleana
-        K: constante numérica
+        Z: constante inteira
+        R: constante real
         C: caracter
         S: cadeia de caracteres
         '=': Atribuição
@@ -66,10 +67,15 @@ typedef struct ast {
     struct ast *rhs;
 } AST;
 
-typedef struct number {
+typedef struct integer {
+    int nodetype;
+    int value;
+} Integer;
+
+typedef struct real {
     int nodetype;
     double value;
-} Number;
+} Real;
 
 typedef struct boolean {
     int nodetype;
@@ -109,7 +115,8 @@ typedef struct symassgn {
 AST *newAST(int nodetype, AST *lhs, AST *rhs);
 AST *newReference(Symbol *symbol);
 AST *newAssignment(Symbol *symbol, AST *value);
-AST *newNumber(double value);
+AST *newInteger(int value);
+AST *newReal(double value);
 AST *newBoolean(int value);
 AST *newCharacter(char value);
 AST *newWord(char *value);
@@ -118,6 +125,11 @@ AST *newFlow(int nodetype, AST *condition, AST *then_part, AST *else_part);
 
 
 // Avalia uma AST
+int booleanEval(AST *ast);
+int integerEval(AST *ast);
+double realEval(AST *ast);
+char characterEval(AST *ast);
+char *wordEval(AST *ast);
 AST *evalExpression(AST *ast);
 
 // Libera uma árvore

@@ -23,7 +23,7 @@ Symbol *lookup(char *symbol) {
         if (!symbolPointer->name) {
             symbolPointer->name = strdup(symbol);
             symbolPointer->type = 0;
-            symbolPointer->typePointer = NULL;
+            symbolPointer->value = NULL;
             return symbolPointer;
         }
 
@@ -61,18 +61,40 @@ AST *newAST(int nodetype, AST *lhs, AST *rhs) {
     return ast;
 }
 
-AST *newNumber(double value) {
-    Number *number = malloc(sizeof(Number));
+AST *newInteger(int value) {
+    Integer *integer = malloc(sizeof(Integer));
 
-    if (!number) {
+    if (!integer) {
         yyerror("[ERROR] Not enough space!");
         exit(0);
     }
 
-    number->nodetype = 'K';
-    number->value = value;
+    integer->nodetype = 'Z';
+    integer->value = value;
 
-    return (AST*)number;
+    AST *ast = (AST*)integer;
+    ast->lhs = NULL;
+    ast->rhs = NULL;
+
+    return ast;
+}
+
+AST *newReal(double value) {
+	Real *real = malloc(sizeof(Real));
+
+	if (!real) {
+		yyerror("[ERROR] Not Enough space!");
+		exit(0);
+	}
+
+	real->nodetype = 'R';
+	real->value = value;
+
+	AST *ast = (AST*)real;
+	ast->lhs = NULL;
+	ast->rhs = NULL;
+
+	return ast;
 }
 
 AST *newBoolean(int value) {
@@ -86,7 +108,11 @@ AST *newBoolean(int value) {
     boolean->nodetype = 'B';
     boolean->value = value;
 
-    return (AST*)boolean;
+    AST *ast = (AST*)boolean;
+    ast->lhs = NULL;
+    ast->rhs = NULL;
+
+    return ast;
 }
 
 AST *newCharacter(char value) {
@@ -100,7 +126,11 @@ AST *newCharacter(char value) {
     character->nodetype = 'C';
     character->value = value;
 
-    return (AST*)character;
+    AST *ast = (AST*)character;
+    ast->lhs = NULL;
+    ast->rhs = NULL;
+
+    return ast;
 }
 
 AST *newWord(char *value) {
@@ -114,7 +144,11 @@ AST *newWord(char *value) {
     word->nodetype = 'S';
     word->value = value;
 
-    return (AST*)word;
+    AST *ast = (AST*)word;
+    ast->lhs = NULL;
+    ast->rhs = NULL;
+
+    return ast;
 }
 
 AST *newAssignment(Symbol *symbol, AST *value) {
@@ -242,7 +276,7 @@ void symlistFree(SymList *symlist) {
 }
 
 void graphEval(AST *ast) {
-//    FILE *dot = fopen("ast.gv", "w");
+//    FILE *dot = fopen("graph/ast/ast.gv", "w");
 //
 //    if(dot) {
 //        int size;
@@ -265,13 +299,18 @@ void graphEval(AST *ast) {
 //        fclose(dot);
 //        dot = NULL;
 //
-//        system("dot ast.gv | gvpr -c -ftree.gv | neato -n -Tsvg -o ast.svg");
+//        system("dot graph/ast/ast.gv | gvpr -c -fgraph/ast/tree.gv | neato -n -Tsvg -o graph/ast/output/ast.svg");
 //    } else {
 //        fprintf(stderr, "[ERROR] Failed to create file!");
 //    }
 
     if (ast) {
+		char no = ast->nodetype;
         printf("Nó: %c.\n", ast->nodetype);
+
+        AST *lhs = ast->lhs;
+        AST *rhs = ast->rhs;
+
         if (ast->lhs) {
             graphEval(ast->lhs);
         }
@@ -312,11 +351,1262 @@ void auxEval(AST *ast, FILE *file) {
     }
 }
 
+AST *eval(AST *ast) {
+	if (!ast) {
+		yyerror("[ERROR] Internal error! Null evaluation.");
+		return NULL;
+	}
+
+    char node = ast->nodetype;
+    AST *evaluatedAST;
+
+    if (node == 'L') {
+		AST *lhs, *rhs;
+
+		if (ast->lhs) {
+			lhs = ast->lhs;
+		}
+		if (ast->rhs) {
+			rhs = ast->rhs;
+		}
+
+		eval(lhs);
+		evaluatedAST = eval(rhs);
+	} else if (node == 'Z' || node == 'R') {
+		evaluatedAST = ast;
+	} else if (node == 'C' || node == 'S') {
+		evaluatedAST = ast;
+	} else if (node == 'B') {
+		evaluatedAST = ast;
+	} else if (node == 'N') {
+		SymRef *symref = (SymRef*)ast;
+		Symbol *symbol = symref->symbol;
+
+		evaluatedAST = eval(symbol->value);
+    } else if (node == '+') {
+		AST *lhs, *rhs;
+
+		if (ast->lhs) {
+			lhs = ast->lhs;
+		}
+		if (ast->rhs) {
+			rhs = ast->rhs;
+		}
+
+        if (lhs && rhs) {
+			if (lhs->nodetype != 'Z' || lhs->nodetype != 'R' || lhs->nodetype != 'C' || lhs->nodetype != 'S' || lhs->nodetype != 'B') {
+				lhs = eval(lhs);
+			}
+
+			if (rhs->nodetype != 'Z' || rhs->nodetype != 'R' || rhs->nodetype != 'C' || rhs->nodetype != 'S' || rhs->nodetype != 'B') {
+				rhs = eval(rhs);
+			}
+
+			char aux1 = lhs->nodetype, aux2 = rhs->nodetype;
+
+			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
+                int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newInteger(temp1 + temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'R') {
+				double temp1, temp2;
+
+				temp1 = realEval(lhs);
+				temp2 = realEval(rhs);
+
+				evaluatedAST = newReal(temp1 + temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'R') {
+				int temp1;
+				double temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newInteger(temp1 + (int)temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '+' for types 'integer' and 'character'.");
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '+' for types 'integer' and 'string'.");
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'B') {
+				int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = booleanEval(rhs);
+
+                evaluatedAST = newInteger(temp1 + temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'Z') {
+				int temp1;
+				double temp2;
+
+				temp1 = realEval(rhs);
+				temp2 = integerEval(lhs);
+
+                evaluatedAST = newReal(temp1 + temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'B') {
+				int temp1;
+				double temp2;
+
+                temp1 = booleanEval(rhs);
+                temp2 = realEval(lhs);
+
+                evaluatedAST = newReal(temp1 + temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '+' for types 'real' and 'character'.");
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '+' for types 'real' and 'string'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'Z') {
+				yyerror("[ERROR] Invalid operator '+' for types 'character' and 'integer'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'R') {
+				yyerror("[ERROR] Invalid operator '+' for types 'character' and 'real'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '+' for types 'character' and 'character'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '+' for types 'character' and 'string'.");
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'S') {
+                int size;
+                char *temp1, *temp2;
+                char buffer[500];
+
+                temp1 = wordEval(lhs);
+                temp2 = wordEval(rhs);
+
+                size = snprintf(buffer, 500, "%s%s", temp1, temp2);
+                char temp[size];
+                strcpy(temp, buffer);
+
+                evaluatedAST = newWord(temp);
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'C') {
+				int size;
+                char *temp1;
+                char temp2, buffer[100];
+
+                temp1 = wordEval(lhs);
+                temp2 = characterEval(rhs);
+
+                size = snprintf(buffer, 500, "%s%c", temp1, temp2);
+                char temp[size];
+                strcpy(temp, buffer);
+
+                evaluatedAST = newWord(temp);
+			}
+        }
+    } else if (node == '-') {
+		AST *lhs, *rhs;
+
+		if (ast->lhs) {
+			lhs = ast->lhs;
+		}
+		if (ast->rhs) {
+			rhs = ast->rhs;
+		}
+
+        if (lhs && rhs) {
+			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
+                int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newInteger(temp1 - temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'R') {
+				double temp1, temp2;
+
+				temp1 = realEval(lhs);
+				temp2 = realEval(rhs);
+
+				evaluatedAST = newReal(temp1 - temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'R') {
+				int temp1;
+				double temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newInteger(temp1 - (int)temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'R') {
+				int temp1;
+				double temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newInteger(temp1 + (int)temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '-' for types 'integer' and 'character'.");
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '-' for types 'integer' and 'string'.");
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'B') {
+				int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = booleanEval(rhs);
+
+                evaluatedAST = newInteger(temp1 - temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'Z') {
+				int temp1;
+				double temp2;
+
+				temp1 = realEval(rhs);
+				temp2 = integerEval(lhs);
+
+                evaluatedAST = newReal(temp1 - temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'B') {
+				int temp1;
+				double temp2;
+
+                temp1 = booleanEval(rhs);
+                temp2 = realEval(lhs);
+
+                evaluatedAST = newReal(temp1 - temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '-' for types 'real' and 'character'.");
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '-' for types 'real' and 'string'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'Z') {
+				yyerror("[ERROR] Invalid operator '-' for types 'character' and 'integer'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'R') {
+				yyerror("[ERROR] Invalid operator '-' for types 'character' and 'real'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '-' for types 'character' and 'character'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '-' for types 'character' and 'string'.");
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'S') {
+                yyerror("[ERROR] Invalid operator '-' for types 'string' and 'string'.");
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '-' for types 'string' and 'character'.");
+			}
+        }
+    } else if (node == '*') {
+		AST *lhs, *rhs;
+
+		if (ast->lhs) {
+			lhs = ast->lhs;
+		}
+		if (ast->rhs) {
+			rhs = ast->rhs;
+		}
+
+        if (lhs && rhs) {
+			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
+                int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newInteger(temp1 * temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'R') {
+				double temp1, temp2;
+
+				temp1 = realEval(lhs);
+				temp2 = realEval(rhs);
+
+				evaluatedAST = newReal(temp1 * temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'R') {
+				int temp1;
+				double temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newInteger(temp1 + (int)temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '*' for types 'integer' and 'character'.");
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '*' for types 'integer' and 'string'.");
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'B') {
+				int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = booleanEval(rhs);
+
+                evaluatedAST = newInteger(temp1 * temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'Z') {
+				int temp1;
+				double temp2;
+
+				temp1 = realEval(lhs);
+				temp2 = integerEval(rhs);
+
+                evaluatedAST = newReal(temp1 * temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'B') {
+				int temp1;
+				double temp2;
+
+                temp1 = booleanEval(rhs);
+                temp2 = realEval(lhs);
+
+                evaluatedAST = newReal(temp1 * temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '*' for types 'real' and 'character'.");
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '*' for types 'real' and 'string'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'Z') {
+				yyerror("[ERROR] Invalid operator '*' for types 'character' and 'integer'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'R') {
+				yyerror("[ERROR] Invalid operator '*' for types 'character' and 'real'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '*' for types 'character' and 'character'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '*' for types 'character' and 'string'.");
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'S') {
+                yyerror("[ERROR] Invalid operator '*' for types 'string' and 'string'.");
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '*' for types 'string' and 'character'.");
+			}
+		}
+	} else if (node == '/') {
+		AST *lhs, *rhs;
+
+		if (ast->lhs) {
+			lhs = ast->lhs;
+		}
+		if (ast->rhs) {
+			rhs = ast->rhs;
+		}
+
+        if (lhs && rhs) {
+			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
+                int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newInteger(temp1 / temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'R') {
+				double temp1, temp2;
+
+				temp1 = realEval(lhs);
+				temp2 = realEval(rhs);
+
+				evaluatedAST = newReal(temp1 / temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'R') {
+				int temp1;
+				double temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newInteger(temp1 + (int)temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '/' for types 'integer' and 'character'.");
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '/' for types 'integer' and 'string'.");
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'B') {
+				int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = booleanEval(rhs);
+
+                evaluatedAST = newInteger(temp1 / temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'Z') {
+				int temp1;
+				double temp2;
+
+				temp1 = realEval(rhs);
+				temp2 = integerEval(lhs);
+
+                evaluatedAST = newReal(temp1 / temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'B') {
+				int temp1;
+				double temp2;
+
+                temp1 = booleanEval(rhs);
+                temp2 = realEval(lhs);
+
+                evaluatedAST = newReal(temp1 / temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '/' for types 'real' and 'character'.");
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '/' for types 'real' and 'string'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'Z') {
+				yyerror("[ERROR] Invalid operator '/' for types 'character' and 'integer'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'R') {
+				yyerror("[ERROR] Invalid operator '/' for types 'character' and 'real'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '/' for types 'character' and 'character'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '/' for types 'character' and 'string'.");
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'S') {
+                yyerror("[ERROR] Invalid operator '/' for types 'string' and 'string'.");
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '/' for types 'string' and 'character'.");
+			}
+		}
+	} else if (node == '%') {
+		AST *lhs, *rhs;
+
+		if (ast->lhs) {
+			lhs = ast->lhs;
+		}
+		if (ast->rhs) {
+			rhs = ast->rhs;
+		}
+
+        if (lhs && rhs) {
+			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
+                int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newInteger(temp1 % temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'R') {
+				double temp1, temp2;
+
+				temp1 = realEval(lhs);
+				temp2 = realEval(rhs);
+
+				evaluatedAST = newReal((int)temp1 % (int)temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'R') {
+				int temp1;
+				double temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newInteger(temp1 + (int)temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '%' for types 'integer' and 'character'.");
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '%' for types 'integer' and 'string'.");
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'B') {
+				int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = booleanEval(rhs);
+
+                evaluatedAST = newInteger(temp1 % temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'Z') {
+				int temp1;
+				double temp2;
+
+				temp2 = realEval(lhs);
+				temp1 = integerEval(rhs);
+
+                evaluatedAST = newReal((int)temp2 % temp1);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'B') {
+				int temp1;
+				double temp2;
+
+                temp1 = booleanEval(rhs);
+                temp2 = realEval(lhs);
+
+                evaluatedAST = newReal(temp1 % (int)temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '%' for types 'real' and 'character'.");
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '%' for types 'real' and 'string'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'Z') {
+				yyerror("[ERROR] Invalid operator '%' for types 'character' and 'integer'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'R') {
+				yyerror("[ERROR] Invalid operator '%' for types 'character' and 'real'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '%' for types 'character' and 'character'.");
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'S') {
+				yyerror("[ERROR] Invalid operator '%' for types 'character' and 'string'.");
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'S') {
+                yyerror("[ERROR] Invalid operator '%' for types 'string' and 'string'.");
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'C') {
+				yyerror("[ERROR] Invalid operator '%' for types 'string' and 'character'.");
+			}
+		}
+	} else if (node == 'o') {
+		AST *lhs, *rhs;
+
+		if (ast->lhs) {
+			lhs = ast->lhs;
+		}
+		if (ast->rhs) {
+			rhs = ast->rhs;
+		}
+
+        if (lhs && rhs) {
+			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
+                int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'R') {
+				double temp1, temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'R') {
+				int temp1;
+				double temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'C') {
+				int temp1;
+				char temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = characterEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'S') {
+				int temp1;
+				char *temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = wordEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'B') {
+				int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = booleanEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'Z') {
+				double temp1;
+				int temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'B') {
+				double temp1;
+				int temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = booleanEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'C') {
+				double temp1;
+				char temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = characterEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'S') {
+				double temp1;
+				char *temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = wordEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'Z') {
+				char temp1;
+				int temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'R') {
+				char temp1;
+				double temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'C') {
+				char temp1, temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = characterEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'S') {
+				char temp1;
+				int temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'S') {
+                char *temp1, *temp2;
+
+                temp1 = wordEval(lhs);
+                temp2 = wordEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'C') {
+				char *temp1;
+				char temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = wordEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 || temp2);
+			}
+		}
+	} else if (node == '.') {
+		AST *lhs, *rhs;
+
+		if (ast->lhs) {
+			lhs = ast->lhs;
+		}
+		if (ast->rhs) {
+			rhs = ast->rhs;
+		}
+
+        if (lhs && rhs) {
+			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
+                int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'R') {
+				double temp1, temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'R') {
+				int temp1;
+				double temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'C') {
+				int temp1;
+				char temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = characterEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'S') {
+				int temp1;
+				char *temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = wordEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'B') {
+				int temp1, temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = booleanEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'Z') {
+				double temp1;
+				int temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'B') {
+				double temp1;
+				int temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = booleanEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'C') {
+				double temp1;
+				char temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = characterEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'S') {
+				double temp1;
+				char *temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = wordEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'Z') {
+				char temp1;
+				int temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'R') {
+				char temp1;
+				double temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = realEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'C') {
+				char temp1, temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = characterEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'S') {
+				char temp1;
+				int temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = integerEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'S') {
+                char *temp1, *temp2;
+
+                temp1 = wordEval(lhs);
+                temp2 = wordEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'C') {
+				char *temp1;
+				char temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = wordEval(rhs);
+
+                evaluatedAST = newBoolean(temp1 && temp2);
+			}
+		}
+	} else if (node == 'I') {
+        AST *condition = ((Flow*)ast)->condition;
+        AST *result = eval(condition);
+
+        if (((Boolean*)result)->value) {
+			AST *then_part;
+			if (then_part = ((Flow*)ast)->then_part) {
+				evaluatedAST = eval(then_part);
+			} else {
+				evaluatedAST = NULL;
+			}
+        } else {
+			AST *else_part;
+			if (else_part = ((Flow*)ast)->else_part) {
+				evaluatedAST = eval(else_part);
+			} else {
+				evaluatedAST = NULL;
+			}
+        }
+	} else if (node == 'W') {
+        AST *then_part;
+        AST *condition = ((Flow*)ast)->condition;
+
+        if (then_part = ((Flow*)ast)->then_part) {
+			while (((Boolean*)eval(condition))->value) {
+				evaluatedAST = eval(then_part);
+            }
+        }
+	} else if (node == '=') {
+        Symbol *symbol = ((SymAssignment*)ast)->symbol;
+        AST *value = ((SymAssignment*)ast)->value;
+
+		evaluatedAST = eval(value);
+
+		char *symbolType, *valueType;
+
+		int type = symbol->type;
+
+        switch (symbol->type) {
+            case 1:
+				symbolType = "integer";
+				break;
+
+			case 2:
+				symbolType = "real";
+				break;
+
+			case 3:
+				symbolType = "char";
+				break;
+
+			case 4:
+				symbolType = "string";
+				break;
+
+			case 5:
+				symbolType = "boolean";
+				break;
+        }
+
+        switch (evaluatedAST->nodetype) {
+			case 'Z':
+				valueType = "integer";
+				break;
+
+			case 'R':
+				valueType = "real";
+				break;
+
+			case 'C':
+				valueType = "char";
+				break;
+
+			case 'S':
+				valueType = "string";
+				break;
+
+			case 'B':
+				valueType = "boolean";
+				break;
+        }
+
+        if (symbolType == valueType) {
+            symbol->value = evaluatedAST;
+        } else {
+            yyerror("[ERROR] Cannot cast types: '%s' to '%s'.", symbolType, valueType);
+        }
+
+	} else if (node == '1') {
+        AST *temp1, *temp2;
+
+        temp1 = eval(ast->lhs);
+        temp2 = eval(ast->rhs);
+
+        if (temp1->nodetype == temp2->nodetype) {
+			char node = temp1->nodetype;
+
+            if (node == 'Z') {
+                evaluatedAST = newBoolean(((Integer*)temp1)->value > ((Integer*)temp2)->value);
+            } else if (node == 'R') {
+				evaluatedAST = newBoolean(((Real*)temp1)->value > ((Real*)temp2)->value);
+            } else if (node == 'C') {
+				evaluatedAST = newBoolean(((Character*)temp1)->value > ((Character*)temp2)->value);
+            } else if (node == 'S') {
+				evaluatedAST = newBoolean(sizeof(((Word*)temp1)->value) > sizeof(((Word*)temp2)->value));
+            }
+        } else {
+			char *lhsType, *rhsType;
+
+			switch (temp1->nodetype) {
+				case 'Z':
+				lhsType = "integer";
+				break;
+
+				case 'R':
+					lhsType = "real";
+					break;
+
+				case 'C':
+					lhsType = "char";
+					break;
+
+				case 'S':
+					lhsType = "string";
+					break;
+
+				case 'B':
+					lhsType = "boolean";
+					break;
+			}
+
+			switch(temp2->nodetype) {
+				case 'Z':
+					rhsType = "integer";
+					break;
+
+				case 'R':
+					rhsType = "real";
+					break;
+
+				case 'C':
+					rhsType = "char";
+					break;
+
+				case 'S':
+					rhsType = "string";
+					break;
+
+				case 'B':
+					rhsType = "boolean";
+					break;
+			}
+
+			yyerror("[ERROR]Invalid operator '>' to types '%s' and '%s'", lhsType, rhsType);
+        }
+	} else if (node == '2') {
+        AST *temp1, *temp2;
+
+        temp1 = eval(ast->lhs);
+        temp2 = eval(ast->rhs);
+
+        if (temp1->nodetype == temp2->nodetype) {
+			char node = temp1->nodetype;
+
+            if (node == 'Z') {
+                evaluatedAST = newBoolean(((Integer*)temp1)->value < ((Integer*)temp2)->value);
+            } else if (node == 'R') {
+				evaluatedAST = newBoolean(((Real*)temp1)->value < ((Real*)temp2)->value);
+            } else if (node == 'C') {
+				evaluatedAST = newBoolean(((Character*)temp1)->value < ((Character*)temp2)->value);
+            } else if (node == 'S') {
+				evaluatedAST = newBoolean(sizeof(((Word*)temp1)->value) < sizeof(((Word*)temp2)->value));
+            }
+        } else {
+			char *lhsType, *rhsType;
+
+			switch (temp1->nodetype) {
+				case 'Z':
+				lhsType = "integer";
+				break;
+
+				case 'R':
+					lhsType = "real";
+					break;
+
+				case 'C':
+					lhsType = "char";
+					break;
+
+				case 'S':
+					lhsType = "string";
+					break;
+
+				case 'B':
+					lhsType = "boolean";
+					break;
+			}
+
+			switch(temp2->nodetype) {
+				case 'Z':
+					rhsType = "integer";
+					break;
+
+				case 'R':
+					rhsType = "real";
+					break;
+
+				case 'C':
+					rhsType = "char";
+					break;
+
+				case 'S':
+					rhsType = "string";
+					break;
+
+				case 'B':
+					rhsType = "boolean";
+					break;
+			}
+
+			yyerror("[ERROR]Invalid operator '<' to types '%s' and '%s'", lhsType, rhsType);
+        }
+	} else if (node == '3') {
+        AST *temp1, *temp2;
+
+        temp1 = eval(ast->lhs);
+        temp2 = eval(ast->rhs);
+
+        if (temp1->nodetype == temp2->nodetype) {
+			char node = temp1->nodetype;
+
+            if (node == 'Z') {
+                evaluatedAST = newBoolean(((Integer*)temp1)->value != ((Integer*)temp2)->value);
+            } else if (node == 'R') {
+				evaluatedAST = newBoolean(((Real*)temp1)->value != ((Real*)temp2)->value);
+            } else if (node == 'C') {
+				evaluatedAST = newBoolean(((Character*)temp1)->value != ((Character*)temp2)->value);
+            } else if (node == 'S') {
+				evaluatedAST = newBoolean(sizeof(((Word*)temp1)->value) != sizeof(((Word*)temp2)->value));
+            }
+        } else {
+			char *lhsType, *rhsType;
+
+			switch (temp1->nodetype) {
+				case 'Z':
+				lhsType = "integer";
+				break;
+
+				case 'R':
+					lhsType = "real";
+					break;
+
+				case 'C':
+					lhsType = "char";
+					break;
+
+				case 'S':
+					lhsType = "string";
+					break;
+
+				case 'B':
+					lhsType = "boolean";
+					break;
+			}
+
+			switch(temp2->nodetype) {
+				case 'Z':
+					rhsType = "integer";
+					break;
+
+				case 'R':
+					rhsType = "real";
+					break;
+
+				case 'C':
+					rhsType = "char";
+					break;
+
+				case 'S':
+					rhsType = "string";
+					break;
+
+				case 'B':
+					rhsType = "boolean";
+					break;
+			}
+
+			yyerror("[ERROR]Invalid operator '<>' to types '%s' and '%s'", lhsType, rhsType);
+        }
+	} else if (node == '4') {
+        AST *temp1, *temp2;
+
+        temp1 = eval(ast->lhs);
+        temp2 = eval(ast->rhs);
+
+        if (temp1->nodetype == temp2->nodetype) {
+			char node = temp1->nodetype;
+
+            if (node == 'Z') {
+                evaluatedAST = newBoolean(((Integer*)temp1)->value <= ((Integer*)temp2)->value);
+            } else if (node == 'R') {
+				evaluatedAST = newBoolean(((Real*)temp1)->value <= ((Real*)temp2)->value);
+            } else if (node == 'C') {
+				evaluatedAST = newBoolean(((Character*)temp1)->value <= ((Character*)temp2)->value);
+            } else if (node == 'S') {
+				evaluatedAST = newBoolean(sizeof(((Word*)temp1)->value) <= sizeof(((Word*)temp2)->value));
+            }
+        } else {
+			char *lhsType, *rhsType;
+
+			switch (temp1->nodetype) {
+				case 'Z':
+				lhsType = "integer";
+				break;
+
+				case 'R':
+					lhsType = "real";
+					break;
+
+				case 'C':
+					lhsType = "char";
+					break;
+
+				case 'S':
+					lhsType = "string";
+					break;
+
+				case 'B':
+					lhsType = "boolean";
+					break;
+			}
+
+			switch(temp2->nodetype) {
+				case 'Z':
+					rhsType = "integer";
+					break;
+
+				case 'R':
+					rhsType = "real";
+					break;
+
+				case 'C':
+					rhsType = "char";
+					break;
+
+				case 'S':
+					rhsType = "string";
+					break;
+
+				case 'B':
+					rhsType = "boolean";
+					break;
+			}
+
+			yyerror("[ERROR]Invalid operator '<=' to types '%s' and '%s'", lhsType, rhsType);
+        }
+	} else if (node == '5') {
+        AST *temp1, *temp2;
+
+        temp1 = eval(ast->lhs);
+        temp2 = eval(ast->rhs);
+
+        if (temp1->nodetype == temp2->nodetype) {
+			char node = temp1->nodetype;
+
+            if (node == 'Z') {
+                evaluatedAST = newBoolean(((Integer*)temp1)->value >= ((Integer*)temp2)->value);
+            } else if (node == 'R') {
+				evaluatedAST = newBoolean(((Real*)temp1)->value >= ((Real*)temp2)->value);
+            } else if (node == 'C') {
+				evaluatedAST = newBoolean(((Character*)temp1)->value >= ((Character*)temp2)->value);
+            } else if (node == 'S') {
+				evaluatedAST = newBoolean(sizeof(((Word*)temp1)->value) >= sizeof(((Word*)temp2)->value));
+            }
+        } else {
+			char *lhsType, *rhsType;
+
+			switch (temp1->nodetype) {
+				case 'Z':
+				lhsType = "integer";
+				break;
+
+				case 'R':
+					lhsType = "real";
+					break;
+
+				case 'C':
+					lhsType = "char";
+					break;
+
+				case 'S':
+					lhsType = "string";
+					break;
+
+				case 'B':
+					lhsType = "boolean";
+					break;
+			}
+
+			switch(temp2->nodetype) {
+				case 'Z':
+					rhsType = "integer";
+					break;
+
+				case 'R':
+					rhsType = "real";
+					break;
+
+				case 'C':
+					rhsType = "char";
+					break;
+
+				case 'S':
+					rhsType = "string";
+					break;
+
+				case 'B':
+					rhsType = "boolean";
+					break;
+			}
+
+			yyerror("[ERROR]Invalid operator '>=' to types '%s' and '%s'", lhsType, rhsType);
+        }
+	} else if (node == '6') {
+        AST *temp1, *temp2;
+
+        temp1 = eval(ast->lhs);
+        temp2 = eval(ast->rhs);
+
+        if (temp1->nodetype == temp2->nodetype) {
+			char node = temp1->nodetype;
+
+            if (node == 'Z') {
+				int x = ((Integer*)temp1)->value;
+				int y = ((Integer*)temp2)->value;
+				int aux = x == y;
+                evaluatedAST = newBoolean(((Integer*)temp1)->value == ((Integer*)temp2)->value);
+            } else if (node == 'R') {
+				evaluatedAST = newBoolean(((Real*)temp1)->value == ((Real*)temp2)->value);
+            } else if (node == 'C') {
+				evaluatedAST = newBoolean(((Character*)temp1)->value == ((Character*)temp2)->value);
+            } else if (node == 'S') {
+				evaluatedAST = newBoolean(sizeof(((Word*)temp1)->value) == sizeof(((Word*)temp2)->value));
+            }
+        } else {
+			char *lhsType, *rhsType;
+
+			switch (temp1->nodetype) {
+				case 'Z':
+				lhsType = "integer";
+				break;
+
+				case 'R':
+					lhsType = "real";
+					break;
+
+				case 'C':
+					lhsType = "char";
+					break;
+
+				case 'S':
+					lhsType = "string";
+					break;
+
+				case 'B':
+					lhsType = "boolean";
+					break;
+			}
+
+			switch(temp2->nodetype) {
+				case 'Z':
+					rhsType = "integer";
+					break;
+
+				case 'R':
+					rhsType = "real";
+					break;
+
+				case 'C':
+					rhsType = "char";
+					break;
+
+				case 'S':
+					rhsType = "string";
+					break;
+
+				case 'B':
+					rhsType = "boolean";
+					break;
+			}
+
+			yyerror("[ERROR]Invalid operator '==' to types '%s' and '%s'", lhsType, rhsType);
+        }
+	}
+}
+
+int booleanEval(AST *ast) {
+	return ((Boolean*)ast)->value;
+}
+
+int integerEval(AST *ast) {
+	return ((Integer*)ast)->value;
+}
+
+double realEval(AST *ast) {
+	return ((Real*)ast)->value;
+}
+
+char characterEval(AST *ast) {
+	return ((Character*)ast)->value;
+}
+
+char *wordEval(AST *ast) {
+	return ((Word*)ast)->value;
+}
+
+
 int main(int argc, char **argv) {
-    if (argc < 1) {
+    if (argc < 2) {
         printf("Usage: minipascal <file path>\n");
     } else {
-        yyin = fopen("test files/test.pas", "r");
+        yyin = fopen(argv[1], "r");
 
         if (yyin) {
             do {

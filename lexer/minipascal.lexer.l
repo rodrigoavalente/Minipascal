@@ -51,6 +51,10 @@ EXP ([Ee][\-\+]?[0-9]+)
 ">="                                                   {    yylval.relational = 5;
                                                             return RELATIONAL_OPERATOR;
                                                        }
+"=" 												   {
+															yylval.relational = 6;
+															return RELATIONAL_OPERATOR;
+													   }
 
 ":="                                                   {return ASSIGNMENT;}
 
@@ -81,9 +85,13 @@ EXP ([Ee][\-\+]?[0-9]+)
                                                             return IDENTIFIER;
                                                        }
 {NUMBER}+{EXP}?                                        {
-                                                          yylval.const_number = atof(yytext);
-                                                          return CONST_NUMBER;
+                                                          yylval.const_int = atoi(yytext);
+                                                          return CONST_INT;
                                                        }
+{NUMBER}+\.?{EXP}?									   {
+														  yylval.const_real = atof(yytext);
+														  return CONST_REAL;
+													   }
 \'[^\"\n]\'                                            {
                                                           yylval.const_char = yytext;
                                                           return CONST_CHAR;

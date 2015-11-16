@@ -1,7 +1,10 @@
 program teste;
-var casa : integer;
-var a, b : char;
+var a, b, c : integer;
 
 begin
-    casa := 2 + 2 - (5 or 3);
+    a := 5;
+    b := 7;
+    c := a;
+    a := b;
+    b := c;
 end.

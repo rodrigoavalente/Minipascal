@@ -23,7 +23,8 @@
     int const_boolean;
     char const_char;
     char *const_string;
-    double const_number;
+    int const_int;
+    double const_real;
 
     // Definição de tipos
     int type;
@@ -40,7 +41,8 @@
 %token IF WHILE DO
 %token <const_char> CONST_CHAR
 %token <const_string> CONST_STRING
-%token <const_number> CONST_NUMBER
+%token <const_int> CONST_INT
+%token <const_real> CONST_REAL
 %token <const_boolean>  CONST_BOOLEAN
 
 %token <type> TYPE
@@ -58,7 +60,7 @@
 
 %%
     pascal:
-            PROGRAM IDENTIFIER ';' program_block '.'                    {graphEval($4);}
+            PROGRAM IDENTIFIER ';' program_block '.'                    {eval($4);}
         |   pascal error                                                {yyerrok;}
         ;
 
@@ -85,7 +87,7 @@
             %empty                                                      {$$ = NULL;}
 		|   statement ';' statement_list                                {
                                                                             if ($3 == NULL) {
-                                                                                $$ = newAST('L',$1, NULL);
+                                                                                $$ = $1;
                                                                             } else {
                                                                                 $$ = newAST('L', $1, $3);
                                                                             }
@@ -119,7 +121,7 @@
 
                                                                                 lyyerror(@1, temp);
                                                                             } else {
-                                                                                $$ = newAssignment($1, $3);
+                                                                                $$ = newAssignment(symbol, $3);
                                                                             }
                                                                         }
         ;
@@ -127,7 +129,7 @@
     expression:
             factor                                                      {$$ = $1;}
         |   expression SUM_OPERATOR factor                              {$$ = newAST($2, $1, $3);}
-        |   expression RELATIONAL_OPERATOR factor                       {$$ = newAST($2, $1, $3);}
+        |   expression RELATIONAL_OPERATOR factor                       {$$ = newComparison($2, $1, $3);}
         ;
 
     factor:
@@ -149,13 +151,14 @@
 
                                                                                 lyyerror(@1, temp);
                                                                             } else {
-                                                                                $$ = newReference($1);
+                                                                                $$ = newReference(symbol);
                                                                             }
 
                                                                         }
         |   CONST_CHAR                                                  {$$ = newCharacter($1);}
         |   CONST_STRING                                                {$$ = newWord($1);}
-        |   CONST_NUMBER                                                {$$ = newNumber($1);}
+		|	CONST_INT 													{$$ = newInteger($1);}
+        |	CONST_REAL 													{$$ = newReal($1);}
         |   CONST_BOOLEAN                                               {$$ = newBoolean($1);}
         |   '(' expression ')'                                          {$$ = $2;}
         ;
