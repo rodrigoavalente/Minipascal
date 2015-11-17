@@ -56,6 +56,7 @@
 %token <symbol> IDENTIFIER
 
 %right THEN ELSE
+%nonassoc UNARY
 
 %type <symlist> identifier_list
 %type <ast> expression factor term assignment statement statement_list statement_part program_block strutured_statement

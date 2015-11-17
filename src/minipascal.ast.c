@@ -452,7 +452,19 @@ AST *eval(AST *ast) {
 			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'C') {
 				yyerror("[ERROR] Invalid operator '+' for types 'integer' and 'character'.");
 			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'S') {
-				yyerror("[ERROR] Invalid operator '+' for types 'integer' and 'string'.");
+                int temp1;
+                char *temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = wordEval(rhs);
+
+                char buffer[500];
+                int size = snprintf(buffer, 500, "%i%s", temp1, temp2);
+
+                char aux[size];
+                strcpy(aux, buffer);
+
+                evaluatedAST = newWord(aux);
 			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'B') {
 				int temp1, temp2;
 
@@ -477,11 +489,23 @@ AST *eval(AST *ast) {
 
                 evaluatedAST = newReal(temp1 + temp2);
 			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'C') {
-				yyerror("[ERROR] Invalid operator '+' for types 'real' and 'character'.");
+				int temp1;
+                char temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = characterEval(rhs);
+
+				evaluatedAST = newCharacter(temp1 + temp2);
 			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'S') {
 				yyerror("[ERROR] Invalid operator '+' for types 'real' and 'string'.");
 			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'Z') {
-				yyerror("[ERROR] Invalid operator '+' for types 'character' and 'integer'.");
+				char temp1;
+                int temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = integerEval(rhs);
+
+				evaluatedAST = newCharacter(temp1 + temp2);
 			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'R') {
 				yyerror("[ERROR] Invalid operator '+' for types 'character' and 'real'.");
 			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'C') {
@@ -564,9 +588,15 @@ AST *eval(AST *ast) {
                 temp1 = integerEval(lhs);
                 temp2 = realEval(rhs);
 
-                evaluatedAST = newInteger(temp1 + (int)temp2);
+                evaluatedAST = newInteger(temp1 - (int)temp2);
 			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'C') {
-				yyerror("[ERROR] Invalid operator '-' for types 'integer' and 'character'.");
+                int temp1;
+                char temp2;
+
+                temp1 = integerEval(lhs);
+                temp2 = characterEval(rhs);
+
+				evaluatedAST = newCharacter(temp1 - temp2);
 			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'S') {
 				yyerror("[ERROR] Invalid operator '-' for types 'integer' and 'string'.");
 			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'B') {
@@ -597,7 +627,13 @@ AST *eval(AST *ast) {
 			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'S') {
 				yyerror("[ERROR] Invalid operator '-' for types 'real' and 'string'.");
 			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'Z') {
-				yyerror("[ERROR] Invalid operator '-' for types 'character' and 'integer'.");
+				char temp1;
+                int temp2;
+
+                temp1 = characterEval(lhs);
+                temp2 = integerEval(rhs);
+
+				evaluatedAST = newCharacter(temp1 - temp2);
 			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'R') {
 				yyerror("[ERROR] Invalid operator '-' for types 'character' and 'real'.");
 			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'C') {
@@ -1296,7 +1332,6 @@ AST *eval(AST *ast) {
 		} else {
 			yyerror("[ERROR] Cannot cast types: '%s' to '%s'.", symbolType, valueType);
         }
-
 	} else if (node == '1') {
         AST *temp1, *temp2;
 

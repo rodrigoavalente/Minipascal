@@ -63,7 +63,8 @@ SymList *newSymList(const char *name, SymList *next);
 
 typedef enum builtin {
     builtin_write = 1,
-    builtin_writeln
+    builtin_writeln,
+    builtin_read
 } BuiltIn;
 
 typedef struct ast {

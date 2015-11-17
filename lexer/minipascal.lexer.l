@@ -20,7 +20,7 @@
                            yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + yyleng - 1; \
                            yycolumn += yyleng;
 %}
-SIGN (\+|\-)
+SIGN (\-)
 NUMBER [0-9]
 EXP ([Ee][\-\+]?[0-9]+)
 
@@ -86,6 +86,10 @@ EXP ([Ee][\-\+]?[0-9]+)
 																	yylval.function = builtin_writeln;
 																	return FUNCTION;
 															   }
+"read"|"READ" 												   {
+																	yylval.function = builtin_read;
+																	return FUNCTION;
+															   }
 
 "true"|"TRUE"           		                               {return CONST_BOOLEAN;}
 "false"|"FALSE"			                                       {return CONST_BOOLEAN;}
@@ -93,11 +97,11 @@ EXP ([Ee][\-\+]?[0-9]+)
 																	yylval.identifier = lowerString(yytext);
 																	return IDENTIFIER;
 															   }
-{SIGN}{NUMBER}+{EXP}?	                                       {
+\-?{NUMBER}+{EXP}?		                                       {
 																  yylval.const_int = atoi(yytext);
 																  return CONST_INT;
 															   }
-{SIGN}{NUMBER}+"\."?{NUMBER}*{EXP}?|{SIGN}"."{NUMBER}+{EXP}?	   {
+\-?{NUMBER}+"\."?{NUMBER}*{EXP}?|\-?"."{NUMBER}+{EXP}?         {
 																	yylval.const_real = atof(yytext);
 																	return CONST_REAL;
 															   }
