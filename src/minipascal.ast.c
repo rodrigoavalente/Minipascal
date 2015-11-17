@@ -497,7 +497,19 @@ AST *eval(AST *ast) {
 
 				evaluatedAST = newCharacter(temp1 + temp2);
 			} else if (lhs->nodetype == 'R' && rhs->nodetype == 'S') {
-				yyerror("[ERROR] Invalid operator '+' for types 'real' and 'string'.");
+				double temp1;
+                char *temp2;
+
+                temp1 = realEval(lhs);
+                temp2 = wordEval(rhs);
+
+                char buffer[500];
+                int size = snprintf(buffer, 500, "%0.2f%s", temp1, temp2);
+
+                char aux[size];
+                strcpy(aux, buffer);
+
+                evaluatedAST = newWord(aux);
 			} else if (lhs->nodetype == 'C' && rhs->nodetype == 'Z') {
 				char temp1;
                 int temp2;
@@ -538,8 +550,37 @@ AST *eval(AST *ast) {
                 strcpy(temp, buffer);
 
                 evaluatedAST = newWord(temp);
-			}
-        }
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'Z') {
+				 char *temp1;
+				 int temp2;
+
+
+				 temp1 = wordEval(lhs);
+				 temp2 = integerEval(rhs);
+
+				 char buffer[500];
+				 int size = snprintf(buffer, 500, "%s%i", temp1, temp2);
+
+				 char aux[size];
+				 strcpy(aux, buffer);
+
+				 evaluatedAST = newWord(aux);
+			} else if (lhs->nodetype == 'S' && rhs->nodetype == 'R') {
+				 char *temp1;
+				 double temp2;
+
+				 temp1 = wordEval(lhs);
+				 temp2 = realEval(rhs);
+
+				 char buffer[500];
+				 int size = snprintf(buffer, 500, "%s%0.2f", temp1, temp2);
+
+				 char aux[size];
+				 strcpy(aux, buffer);
+
+				 evaluatedAST = newWord(aux);
+		   }
+		}
     } else if (node == '-') {
 		AST *lhs, *rhs;
 

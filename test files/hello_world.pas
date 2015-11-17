@@ -2,5 +2,5 @@ program helloworld;
 var x : real;
 
 begin
-   writeln(1 + " Numero.");
+   writeln("Numero: " + (-1));
 end.
