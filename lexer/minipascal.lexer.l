@@ -5,6 +5,7 @@
     #include <string.h>
     #include <assert.h>
 
+    #include "minipascal.ast.h"
     #include "minipascal.parser.tab.h"
 
     int yycolumn = 1;
@@ -12,7 +13,8 @@
 
     void warning(const char* mensage);
     char *trimWhiteSpace(const char *string);
-    char *lowerString(const char* string_to_lower);
+    char *lowerString(const char *string_to_lower);
+    char *removeQuotes(const char *string);
 
     #define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno; \
                            yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + yyleng - 1; \
@@ -75,12 +77,19 @@ EXP ([Ee][\-\+]?[0-9]+)
 "else"|"ELSE"                                          {return ELSE;}
 "while"|"WHILE"                                        {return WHILE;}
 "do"|"DO"                                              {return DO;}
-
 "not"|"NOT"                                            {return NOT;}
+"write"|"WRITE" 									   {
+															yylval.function = builtin_write;
+															return FUNCTION;
+													   }
+"writeln"|"WRITELN" 								   {
+															yylval.function = builtin_writeln;
+															return FUNCTION;
+													   }
 
 "true"|"TRUE"                                          {return CONST_BOOLEAN;}
 "false"|"FALSE"                                        {return CONST_BOOLEAN;}
-[a-zA-Z]+_?([a-zA-Z|0-9])*                            {
+[a-zA-Z]+_?([a-zA-Z|0-9])*                             {
                                                             yylval.identifier = lowerString(yytext);
                                                             return IDENTIFIER;
                                                        }
@@ -92,17 +101,17 @@ EXP ([Ee][\-\+]?[0-9]+)
 														  yylval.const_real = atof(yytext);
 														  return CONST_REAL;
 													   }
-\'[^\"\n]\'                                            {
-                                                          yylval.const_char = yytext;
+\'[^\'\n]\'                 				           {
+                                                          yylval.const_char = yytext[1];
                                                           return CONST_CHAR;
                                                        }
-\'[^\"\n]$                                             {
+\'[^\'\n]$					                           {
                                                           warning("[WARNING] Untermined char.");
-                                                          yylval.const_char = yytext;
+                                                          yylval.const_char = yytext[1];
                                                           return CONST_CHAR;
                                                        }
-\"[^\"\n]*\"                                           {
-                                                          yylval.const_string = yytext;
+\"[^\"\n]*\"				                           {
+                                                          yylval.const_string = removeQuotes(yytext);
                                                           return CONST_STRING;
                                                        }
 \"[^\"\n]*$                                            {
@@ -126,6 +135,14 @@ EXP ([Ee][\-\+]?[0-9]+)
 
 void warning(const char *message) {
   printf("%s\n", message);
+}
+
+char *removeQuotes(const char *string) {
+	char *temp = strdup(string);
+	temp++;
+	temp[strlen(temp) - 1] = 0;
+
+	return temp;
 }
 
 char *trimWhiteSpace(const char *string) {

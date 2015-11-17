@@ -61,6 +61,11 @@ SymList *newSymList(const char *name, SymList *next);
         W: while
  */
 
+typedef enum builtin {
+    builtin_write = 1,
+    builtin_writeln
+} BuiltIn;
+
 typedef struct ast {
     int nodetype;
     struct ast *lhs;
@@ -111,6 +116,12 @@ typedef struct symassgn {
     AST *value;
 } SymAssignment;
 
+typedef struct function_call {
+    int nodetype;
+    AST *arguments;
+    BuiltIn function_type;
+} FunctionCall;
+
 // Constrói uma AST
 AST *newAST(int nodetype, AST *lhs, AST *rhs);
 AST *newReference(Symbol *symbol);
@@ -119,9 +130,10 @@ AST *newInteger(int value);
 AST *newReal(double value);
 AST *newBoolean(int value);
 AST *newCharacter(char value);
-AST *newWord(char *value);
+AST *newWord(const char *value);
 AST *newComparison(int comparison_type, AST *lhs, AST *rhs);
 AST *newFlow(int nodetype, AST *condition, AST *then_part, AST *else_part);
+AST *newFunction(int function_type, AST *arguments);
 
 
 // Avalia uma AST

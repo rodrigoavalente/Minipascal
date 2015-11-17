@@ -133,7 +133,7 @@ AST *newCharacter(char value) {
     return ast;
 }
 
-AST *newWord(char *value) {
+AST *newWord(const char *value) {
     Word *word = malloc(sizeof(Word));
 
     if (!word) {
@@ -142,13 +142,9 @@ AST *newWord(char *value) {
     }
 
     word->nodetype = 'S';
-    word->value = value;
+    word->value = strdup(value);
 
-    AST *ast = (AST*)word;
-    ast->lhs = NULL;
-    ast->rhs = NULL;
-
-    return ast;
+    return (AST*)word;
 }
 
 AST *newAssignment(Symbol *symbol, AST *value) {
@@ -174,23 +170,37 @@ void treefree(AST *ast) {
         case '4':
         case '5':
         case '6':
-        case '7':
-        case '8':
-        case '9':
-        case '10':
-        case '11':
-        case '12':
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case 'o':
+        case '.':
+        case '%':
+        case 'L':
             treefree(ast->rhs);
 
-        case 'K':
+        case 'Z':
+        case 'R':
         case 'B':
         case 'C':
         case 'S':
+        case 'N':
             break;
 
         case '=':
             free(((SymAssignment*)ast)->value);
             break;
+
+		case 'I':
+		case 'W':
+			free(((Flow*)ast)->condition);
+			if (((Flow*)ast)->then_part) {
+				treefree(((Flow*)ast)->then_part);
+			}
+			if (((Flow*)ast)->else_part){
+				treefree(((Flow*)ast)->else_part);
+			}
     }
 }
 
@@ -263,6 +273,19 @@ AST *newFlow(int nodetype, AST *condition, AST *then_part, AST *else_part) {
     flow->else_part = else_part;
 
     return (AST*)flow;
+}
+
+AST *newFunction(int function_type, AST *arguments) {
+    FunctionCall *function_call = malloc(sizeof(FunctionCall));
+
+    if (!function_call) {
+		yyerror("[ERROR] Not enough space!");
+		exit(0);
+    }
+
+    function_call->nodetype = 'F';
+    function_call->function_type = function_type;
+    function_call->arguments = arguments;
 }
 
 void symlistFree(SymList *symlist) {
@@ -504,6 +527,14 @@ AST *eval(AST *ast) {
 		}
 
         if (lhs && rhs) {
+			if (lhs->nodetype != 'Z' || lhs->nodetype != 'R' || lhs->nodetype != 'C' || lhs->nodetype != 'S' || lhs->nodetype != 'B') {
+				lhs = eval(lhs);
+			}
+
+			if (rhs->nodetype != 'Z' || rhs->nodetype != 'R' || rhs->nodetype != 'C' || rhs->nodetype != 'S' || rhs->nodetype != 'B') {
+				rhs = eval(rhs);
+			}
+
 			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
                 int temp1, temp2;
 
@@ -590,6 +621,13 @@ AST *eval(AST *ast) {
 		}
 
         if (lhs && rhs) {
+			if (lhs->nodetype != 'Z' || lhs->nodetype != 'R' || lhs->nodetype != 'C' || lhs->nodetype != 'S' || lhs->nodetype != 'B') {
+				lhs = eval(lhs);
+			}
+
+			if (rhs->nodetype != 'Z' || rhs->nodetype != 'R' || rhs->nodetype != 'C' || rhs->nodetype != 'S' || rhs->nodetype != 'B') {
+				rhs = eval(rhs);
+			}
 			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
                 int temp1, temp2;
 
@@ -668,6 +706,14 @@ AST *eval(AST *ast) {
 		}
 
         if (lhs && rhs) {
+			if (lhs->nodetype != 'Z' || lhs->nodetype != 'R' || lhs->nodetype != 'C' || lhs->nodetype != 'S' || lhs->nodetype != 'B') {
+				lhs = eval(lhs);
+			}
+
+			if (rhs->nodetype != 'Z' || rhs->nodetype != 'R' || rhs->nodetype != 'C' || rhs->nodetype != 'S' || rhs->nodetype != 'B') {
+				rhs = eval(rhs);
+			}
+
 			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
                 int temp1, temp2;
 
@@ -746,6 +792,14 @@ AST *eval(AST *ast) {
 		}
 
         if (lhs && rhs) {
+			if (lhs->nodetype != 'Z' || lhs->nodetype != 'R' || lhs->nodetype != 'C' || lhs->nodetype != 'S' || lhs->nodetype != 'B') {
+				lhs = eval(lhs);
+			}
+
+			if (rhs->nodetype != 'Z' || rhs->nodetype != 'R' || rhs->nodetype != 'C' || rhs->nodetype != 'S' || rhs->nodetype != 'B') {
+				rhs = eval(rhs);
+			}
+
 			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
                 int temp1, temp2;
 
@@ -824,6 +878,14 @@ AST *eval(AST *ast) {
 		}
 
         if (lhs && rhs) {
+			if (lhs->nodetype != 'Z' || lhs->nodetype != 'R' || lhs->nodetype != 'C' || lhs->nodetype != 'S' || lhs->nodetype != 'B') {
+				lhs = eval(lhs);
+			}
+
+			if (rhs->nodetype != 'Z' || rhs->nodetype != 'R' || rhs->nodetype != 'C' || rhs->nodetype != 'S' || rhs->nodetype != 'B') {
+				rhs = eval(rhs);
+			}
+
 			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
                 int temp1, temp2;
 
@@ -960,6 +1022,14 @@ AST *eval(AST *ast) {
 		}
 
         if (lhs && rhs) {
+			if (lhs->nodetype != 'Z' || lhs->nodetype != 'R' || lhs->nodetype != 'C' || lhs->nodetype != 'S' || lhs->nodetype != 'B') {
+				lhs = eval(lhs);
+			}
+
+			if (rhs->nodetype != 'Z' || rhs->nodetype != 'R' || rhs->nodetype != 'C' || rhs->nodetype != 'S' || rhs->nodetype != 'B') {
+				rhs = eval(rhs);
+			}
+
 			if (lhs->nodetype == 'Z' && rhs->nodetype == 'Z') {
                 int temp1, temp2;
 
@@ -1113,6 +1183,52 @@ AST *eval(AST *ast) {
 				evaluatedAST = eval(then_part);
             }
         }
+	} else if (node == 'F') {
+		FunctionCall *function_call = (FunctionCall*)ast;
+		BuiltIn function_type = function_call->function_type;
+
+		evaluatedAST = eval(function_call->arguments);
+
+		if (function_type == builtin_write) {
+			char argumentNode = evaluatedAST->nodetype;
+			if (argumentNode == 'Z') {
+				Integer *aux = (Integer*)evaluatedAST;
+                printf("%i", aux->value);
+			} else if (argumentNode == 'R') {
+				Real *aux = (Real*)evaluatedAST;
+                printf("%d", aux->value);
+			} else if (argumentNode == 'C') {
+				Character *aux = (Character*)evaluatedAST;
+                printf("%c", aux->value);
+			} else if (argumentNode == 'S') {
+				Word *aux = (Word*)evaluatedAST;
+				char *teste = aux->value;
+                printf("%s", aux->value);
+			} else if (argumentNode == 'B') {
+				Boolean *aux = (Boolean*)evaluatedAST;
+                printf("%i", aux->value);
+			}
+		} else if (function_type == builtin_writeln) {
+			char argumentNode = evaluatedAST->nodetype;
+			if (argumentNode == 'Z') {
+				Integer *aux = (Integer*)evaluatedAST;
+                printf("%i\n", aux->value);
+			} else if (argumentNode == 'R') {
+				Real *aux = (Real*)evaluatedAST;
+                printf("%d\n", aux->value);
+			} else if (argumentNode == 'C') {
+				Character *aux = (Character*)evaluatedAST;
+				char test = aux->value;
+                printf("%c\n", aux->value);
+			} else if (argumentNode == 'S') {
+				Word *aux = (Word*)evaluatedAST;
+				char *teste = aux->value;
+                printf("%s\n", aux->value);
+			} else if (argumentNode == 'B') {
+				Boolean *aux = (Boolean*)evaluatedAST;
+                printf("%i\n", aux->value);
+			}
+		}
 	} else if (node == '=') {
         Symbol *symbol = ((SymAssignment*)ast)->symbol;
         AST *value = ((SymAssignment*)ast)->value;
@@ -1579,6 +1695,8 @@ AST *eval(AST *ast) {
 			yyerror("[ERROR]Invalid operator '==' to types '%s' and '%s'", lhsType, rhsType);
         }
 	}
+
+	return evaluatedAST;
 }
 
 int booleanEval(AST *ast) {

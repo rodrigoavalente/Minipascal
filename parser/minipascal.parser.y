@@ -33,6 +33,9 @@
     struct ast *ast;
     struct symbol *symbol;
     struct symlist *symlist;
+
+    // Definição de funções internas
+    int function;
 }
 
 %token PROGRAM B3GIN END
@@ -46,6 +49,7 @@
 %token <const_boolean>  CONST_BOOLEAN
 
 %token <type> TYPE
+%token <function> FUNCTION
 %token <arithmetic> SUM_OPERATOR MULT_OPERATOR
 %token <relational> RELATIONAL_OPERATOR
 
@@ -60,7 +64,11 @@
 
 %%
     pascal:
-            PROGRAM IDENTIFIER ';' program_block '.'                    {eval($4);}
+            PROGRAM IDENTIFIER ';' program_block '.'                    {
+																			AST *ast = eval($4);
+                                                                            treefree(ast);
+                                                                            treefree($4);
+																		}
         |   pascal error                                                {yyerrok;}
         ;
 
@@ -98,6 +106,7 @@
             %empty                                                      {$$ = NULL;}
         |   assignment                                                  {$$ = $1;}
         |   strutured_statement                                         {$$ = $1;}
+        |	FUNCTION '(' expression ')' 								{$$ = newFunction($1, $3);}
         ;
 
     strutured_statement:
