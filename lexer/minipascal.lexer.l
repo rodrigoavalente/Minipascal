@@ -20,115 +20,115 @@
                            yylloc.first_column = yycolumn; yylloc.last_column = yycolumn + yyleng - 1; \
                            yycolumn += yyleng;
 %}
-
+SIGN (\+|\-)
 NUMBER [0-9]
 EXP ([Ee][\-\+]?[0-9]+)
 
 %%
-"+"                                                    {yylval.arithmetic = '+'; return SUM_OPERATOR;}
-"-"                                                    {yylval.arithmetic = '-'; return SUM_OPERATOR;}
-"or"|"OR"                                              {yylval.arithmetic = 'o'; return SUM_OPERATOR;}
+"+"                                                    		   {yylval.arithmetic = '+'; return SUM_OPERATOR;}
+"-"                                                    		   {yylval.arithmetic = '-'; return SUM_OPERATOR;}
+"or"|"OR"                                              		   {yylval.arithmetic = 'o'; return SUM_OPERATOR;}
 
-"*"                                                    {yylval.arithmetic = '*'; return MULT_OPERATOR;}
-"/"                                                    {yylval.arithmetic = '/'; return MULT_OPERATOR;}
-"div"|"DIV"                                            {yylval.arithmetic = '%'; return MULT_OPERATOR;}
-"and"|"AND"                                            {yylval.arithmetic = '.'; return MULT_OPERATOR;}
+"*"                                                    		   {yylval.arithmetic = '*'; return MULT_OPERATOR;}
+"/"                                                   		   {yylval.arithmetic = '/'; return MULT_OPERATOR;}
+"div"|"DIV"                                     		       {yylval.arithmetic = '%'; return MULT_OPERATOR;}
+"and"|"AND"                             		               {yylval.arithmetic = '.'; return MULT_OPERATOR;}
 
-"("|")"|","|";"|"."|":"|"{"|"}"                        {return yytext[0];}
+"("|")"|","|";"|"."|":"|"{"|"}"			                       {return yytext[0];}
 
 
 
-">"                                                    {    yylval.relational = 1;
-                                                            return RELATIONAL_OPERATOR;
-                                                       }
-"<"                                                    {    yylval.relational = 2;
-                                                            return RELATIONAL_OPERATOR;
-                                                       }
-"<>"                                                   {    yylval.relational = 3;
-                                                            return RELATIONAL_OPERATOR;
-                                                       }
-"<="                                                   {    yylval.relational = 4;
-                                                            return RELATIONAL_OPERATOR;
-                                                       }
-">="                                                   {    yylval.relational = 5;
-                                                            return RELATIONAL_OPERATOR;
-                                                       }
-"=" 												   {
-															yylval.relational = 6;
-															return RELATIONAL_OPERATOR;
-													   }
+">"			                                                   {    yylval.relational = 1;
+																	return RELATIONAL_OPERATOR;
+															   }
+"<"			                                                   {    yylval.relational = 2;
+																	return RELATIONAL_OPERATOR;
+															   }
+"<>"		                                                   {    yylval.relational = 3;
+																	return RELATIONAL_OPERATOR;
+															   }
+"<="		                                                   {    yylval.relational = 4;
+																	return RELATIONAL_OPERATOR;
+															   }
+">="		                                                   {    yylval.relational = 5;
+																	return RELATIONAL_OPERATOR;
+															   }
+"="			 												   {
+																	yylval.relational = 6;
+																	return RELATIONAL_OPERATOR;
+															   }
 
-":="                                                   {return ASSIGNMENT;}
+":="                                                   		   {return ASSIGNMENT;}
 
-"program"|"PROGRAM"                                    {return PROGRAM;}
-"begin"|"BEGIN"                                        {return B3GIN;}
-"end"|"END"                                            {return END;}
-"var"|"VAR"                                            {return VAR;}
-"procedure"|"PROCEDURE"                                {return PROCEDURE;}
-"array"|"ARRAY"                                        {return ARRAY;}
-"of"|"OF"                                              {return OF;}
-"integer"|"INTEGER"                                    {yylval.type = 1; return TYPE;}
-"real"|"REAL"                                          {yylval.type = 2; return TYPE;}
-"char"|"CHAR"                                          {yylval.type = 3; return TYPE;}
-"string"|"STRING"                                      {yylval.type = 4; return TYPE;}
-"boolean"|"BOOLEAN"                                    {yylval.type = 5; return TYPE;}
-"if"|"IF"                                              {return IF;}
-"then"|"THEN"                                          {return THEN;}
-"else"|"ELSE"                                          {return ELSE;}
-"while"|"WHILE"                                        {return WHILE;}
-"do"|"DO"                                              {return DO;}
-"not"|"NOT"                                            {return NOT;}
-"write"|"WRITE" 									   {
-															yylval.function = builtin_write;
-															return FUNCTION;
-													   }
-"writeln"|"WRITELN" 								   {
-															yylval.function = builtin_writeln;
-															return FUNCTION;
-													   }
+"program"|"PROGRAM"                                    		   {return PROGRAM;}
+"begin"|"BEGIN"                                        		   {return B3GIN;}
+"end"|"END"                                            		   {return END;}
+"var"|"VAR"                                            		   {return VAR;}
+"procedure"|"PROCEDURE"                                		   {return PROCEDURE;}
+"array"|"ARRAY"                                        		   {return ARRAY;}
+"of"|"OF"                                              		   {return OF;}
+"integer"|"INTEGER"                                    		   {yylval.type = 1; return TYPE;}
+"real"|"REAL"                                          		   {yylval.type = 2; return TYPE;}
+"char"|"CHAR"                                          		   {yylval.type = 3; return TYPE;}
+"string"|"STRING"                                      		   {yylval.type = 4; return TYPE;}
+"boolean"|"BOOLEAN"                                    		   {yylval.type = 5; return TYPE;}
+"if"|"IF"                                                      {return IF;}
+"then"|"THEN"                                                  {return THEN;}
+"else"|"ELSE"                                                  {return ELSE;}
+"while"|"WHILE"                                                {return WHILE;}
+"do"|"DO"                                              		   {return DO;}
+"not"|"NOT"                                            		   {return NOT;}
+"write"|"WRITE" 									   		   {
+																	yylval.function = builtin_write;
+																	return FUNCTION;
+															   }
+"writeln"|"WRITELN" 								   		   {
+																	yylval.function = builtin_writeln;
+																	return FUNCTION;
+															   }
 
-"true"|"TRUE"                                          {return CONST_BOOLEAN;}
-"false"|"FALSE"                                        {return CONST_BOOLEAN;}
-[a-zA-Z]+_?([a-zA-Z|0-9])*                             {
-                                                            yylval.identifier = lowerString(yytext);
-                                                            return IDENTIFIER;
-                                                       }
-{NUMBER}+{EXP}?                                        {
-                                                          yylval.const_int = atoi(yytext);
-                                                          return CONST_INT;
-                                                       }
-{NUMBER}+\.?{EXP}?									   {
-														  yylval.const_real = atof(yytext);
-														  return CONST_REAL;
-													   }
-\'[^\'\n]\'                 				           {
-                                                          yylval.const_char = yytext[1];
-                                                          return CONST_CHAR;
-                                                       }
-\'[^\'\n]$					                           {
-                                                          warning("[WARNING] Untermined char.");
-                                                          yylval.const_char = yytext[1];
-                                                          return CONST_CHAR;
-                                                       }
-\"[^\"\n]*\"				                           {
-                                                          yylval.const_string = removeQuotes(yytext);
-                                                          return CONST_STRING;
-                                                       }
-\"[^\"\n]*$                                            {
-                                                          warning("[WARNING] Untermined string.");
-                                                          yylval.const_string = yytext;
-                                                          return CONST_STRING;
-                                                       }
+"true"|"TRUE"           		                               {return CONST_BOOLEAN;}
+"false"|"FALSE"			                                       {return CONST_BOOLEAN;}
+[a-zA-Z]+_?([a-zA-Z|0-9])*                             		   {
+																	yylval.identifier = lowerString(yytext);
+																	return IDENTIFIER;
+															   }
+{SIGN}{NUMBER}+{EXP}?	                                       {
+																  yylval.const_int = atoi(yytext);
+																  return CONST_INT;
+															   }
+{SIGN}{NUMBER}+"\."?{NUMBER}*{EXP}?|{SIGN}"."{NUMBER}+{EXP}?	   {
+																	yylval.const_real = atof(yytext);
+																	return CONST_REAL;
+															   }
+\'[^\'\n]\'			                 				           {
+																  yylval.const_char = yytext[1];
+																  return CONST_CHAR;
+															   }
+\'[^\'\n]$							                           {
+																	warning("[WARNING] Untermined char.");
+																	yylval.const_char = yytext[1];
+																	return CONST_CHAR;
+															   }
+\"[^\"\n]*\"				                           		   {
+																	yylval.const_string = removeQuotes(yytext);
+																	return CONST_STRING;
+															   }
+\"[^\"\n]*$                                            		   {
+																	warning("[WARNING] Untermined string.");
+																	yylval.const_string = yytext;
+																	return CONST_STRING;
+                                                               }
 
-\{((.*?)|(\.*?))?\}                                    {/* Ignora comentários*/}
+\{((.*?)|(\.*?))?\}                                    		   {/* Ignora comentários*/}
 
-[ \t]                                                  {/* Ignora espaçoes em branco*/}
-\n                                                     {yycolumn = 1;}
-\n.*                                                   {
-                                                          strcpy(linebuffer, trimWhiteSpace(yytext + 1));
-                                                          yyless(1);
-                                                       }
-.                                                      {}
+[ \t]                                                          {/* Ignora espaçoes em branco*/}
+\n                                                             {yycolumn = 1;}
+\n.*                                                           {
+																	strcpy(linebuffer, trimWhiteSpace(yytext + 1));
+																	yyless(1);
+															   }
+.                                                     		   {}
 
 
 %%

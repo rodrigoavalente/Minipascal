@@ -88,88 +88,87 @@
         ;
 
     statement_part:
-            B3GIN statement_list END                                    {$$ = $2;}
+            B3GIN statement_list END                                	{$$ = $2;}
         ;
 
     statement_list:
-            %empty                                                      {$$ = NULL;}
-		|   statement ';' statement_list                                {
-                                                                            if ($3 == NULL) {
-                                                                                $$ = $1;
-                                                                            } else {
-                                                                                $$ = newAST('L', $1, $3);
-                                                                            }
-                                                                        }
+            %empty                                                  	{$$ = NULL;}
+			|   statement ';' statement_list                            {
+																			if ($3 == NULL) {
+																				$$ = $1;
+																			} else {
+																				$$ = newAST('L', $1, $3);
+																			}
+																		}
         ;
 
     statement:
-            %empty                                                      {$$ = NULL;}
-        |   assignment                                                  {$$ = $1;}
-        |   strutured_statement                                         {$$ = $1;}
+            %empty                                                  	{$$ = NULL;}
+        |   assignment                                              	{$$ = $1;}
+        |   strutured_statement                                     	{$$ = $1;}
         |	FUNCTION '(' expression ')' 								{$$ = newFunction($1, $3);}
         ;
 
     strutured_statement:
-            statement_part                                              {$$ = $1;}
-        |   IF expression THEN statement                                {$$ = newFlow('I', $2, $4, NULL);}
-        |   IF expression THEN statement ELSE statement                 {$$ = newFlow('I', $2, $4, $6);}
-        |   WHILE expression DO statement                               {$$ = newFlow('W', $2, $4, NULL);}
+            statement_part                                          	{$$ = $1;}
+        |   IF expression THEN statement                            	{$$ = newFlow('I', $2, $4, NULL);}
+        |   IF expression THEN statement ELSE statement             	{$$ = newFlow('I', $2, $4, $6);}
+        |   WHILE expression DO statement                           	{$$ = newFlow('W', $2, $4, NULL);}
         ;
 
     assignment:
-            IDENTIFIER ASSIGNMENT expression                            {
-                                                                            Symbol *symbol = getSymbol($1);
+				IDENTIFIER ASSIGNMENT expression                        {
+																			Symbol *symbol = getSymbol($1);
 
-                                                                            if (symbol == NULL) {
-                                                                                int size;
-                                                                                char buffer[30];
+																			if (symbol == NULL) {
+																				int size;
+																				char buffer[30];
 
-                                                                                size = snprintf(buffer, 30, "Undeclared identifier \"%s\"", $1);
-                                                                                char temp[size];
-                                                                                strcpy(temp, buffer);
+																				size = snprintf(buffer, 30, "Undeclared identifier \"%s\"", $1);
+																				char temp[size];
+																				strcpy(temp, buffer);
 
-                                                                                lyyerror(@1, temp);
-                                                                            } else {
-                                                                                $$ = newAssignment(symbol, $3);
-                                                                            }
-                                                                        }
+																					lyyerror(@1, temp);
+																			} else {
+																				$$ = newAssignment(symbol, $3);
+																			}
+																		}
         ;
 
     expression:
-            factor                                                      {$$ = $1;}
-        |   expression SUM_OPERATOR factor                              {$$ = newAST($2, $1, $3);}
-        |   expression RELATIONAL_OPERATOR factor                       {$$ = newComparison($2, $1, $3);}
+            factor                                                 		{$$ = $1;}
+        |   expression SUM_OPERATOR factor                        		{$$ = newAST($2, $1, $3);}
+        |   expression RELATIONAL_OPERATOR factor                  		{$$ = newComparison($2, $1, $3);}
         ;
 
     factor:
-            term                                                        {$$ = $1;}
-        |   factor MULT_OPERATOR term                                   {$$ = newAST($2, $1, $3);}
+            term                                                   		{$$ = $1;}
+        |   factor MULT_OPERATOR term                              		{$$ = newAST($2, $1, $3);}
         ;
 
     term:
-            IDENTIFIER                                                  {
-                                                                            Symbol *symbol = getSymbol($1);
+		IDENTIFIER                                                 		{
+																			Symbol *symbol = getSymbol($1);
 
-                                                                            if ($1 == NULL) {
-                                                                                int size;
-                                                                                char buffer[30];
+																			if ($1 == NULL) {
+																				int size;
+																				char buffer[30];
 
-                                                                                size = snprintf(buffer, 30, "Undeclared identifier \"%s\"", $1);
-                                                                                char temp[size];
-                                                                                strcpy(temp, buffer);
+																				size = snprintf(buffer, 30, "Undeclared identifier \"%s\"", $1);
+																				char temp[size];
+																				strcpy(temp, buffer);
 
-                                                                                lyyerror(@1, temp);
-                                                                            } else {
-                                                                                $$ = newReference(symbol);
-                                                                            }
-
-                                                                        }
-        |   CONST_CHAR                                                  {$$ = newCharacter($1);}
-        |   CONST_STRING                                                {$$ = newWord($1);}
-		|	CONST_INT 													{$$ = newInteger($1);}
+																				lyyerror(@1, temp);
+																			} else {
+																				$$ = newReference(symbol);
+																			}
+																		}
+        |   CONST_CHAR                                              	{$$ = newCharacter($1);}
+        |   CONST_STRING                                            	{$$ = newWord($1);}
+		|	CONST_INT 											    	{$$ = newInteger($1);}
         |	CONST_REAL 													{$$ = newReal($1);}
-        |   CONST_BOOLEAN                                               {$$ = newBoolean($1);}
-        |   '(' expression ')'                                          {$$ = $2;}
+        |   CONST_BOOLEAN                                           	{$$ = newBoolean($1);}
+        |   '(' expression ')'                                      	{$$ = $2;}
         ;
 %%
 

@@ -90,11 +90,11 @@ AST *newReal(double value) {
 	real->nodetype = 'R';
 	real->value = value;
 
-	AST *ast = (AST*)real;
-	ast->lhs = NULL;
-	ast->rhs = NULL;
+//	AST *ast = (AST*)real;
+//	ast->lhs = NULL;
+//	ast->rhs = NULL;
 
-	return ast;
+	return (AST*)real;
 }
 
 AST *newBoolean(int value) {
@@ -1215,7 +1215,8 @@ AST *eval(AST *ast) {
                 printf("%i\n", aux->value);
 			} else if (argumentNode == 'R') {
 				Real *aux = (Real*)evaluatedAST;
-                printf("%d\n", aux->value);
+				double teste = aux->value;
+                printf("%.2f\n", aux->value);
 			} else if (argumentNode == 'C') {
 				Character *aux = (Character*)evaluatedAST;
 				char test = aux->value;
@@ -1285,8 +1286,15 @@ AST *eval(AST *ast) {
 
         if (symbolType == valueType) {
             symbol->value = evaluatedAST;
-        } else {
-            yyerror("[ERROR] Cannot cast types: '%s' to '%s'.", symbolType, valueType);
+        } else if (symbolType == "integer" && valueType == "real") {
+            int value = ((Real*)evaluatedAST)->value;
+            printf("[WARNING] Casting 'real' to 'integer'.");
+            symbol->value = newInteger(value);
+        } else if (symbolType == "real" && valueType == "integer") {
+			double value = ((Integer*)evaluatedAST)->value;
+            symbol->value = newReal(value);
+		} else {
+			yyerror("[ERROR] Cannot cast types: '%s' to '%s'.", symbolType, valueType);
         }
 
 	} else if (node == '1') {
