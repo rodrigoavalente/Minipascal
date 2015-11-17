@@ -1,6 +1,5 @@
 program helloworld;
-var x : real;
 
 begin
-   writeln("Numero: " + (-1));
+   writeln("Hello, world!");
 end.

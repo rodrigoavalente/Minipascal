@@ -726,7 +726,7 @@ AST *eval(AST *ast) {
                 temp1 = integerEval(lhs);
                 temp2 = realEval(rhs);
 
-                evaluatedAST = newInteger(temp1 + (int)temp2);
+                evaluatedAST = newInteger(temp1 * temp2);
 			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'C') {
 				yyerror("[ERROR] Invalid operator '*' for types 'integer' and 'character'.");
 			} else if (lhs->nodetype == 'Z' && rhs->nodetype == 'S') {
